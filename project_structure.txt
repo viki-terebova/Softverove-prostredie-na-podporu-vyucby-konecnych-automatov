@@ -1,0 +1,31 @@
+.
+├── .venv/                  # Virtual environment for Python dependencies
+│
+├── backend/                    # Backend source code
+│   ├── app/                    # Main application folder
+│   │   ├── __init__.py         # Initializes the app package
+│   │   └── app.py              # Main application entry point
+│   ├── config/                 # Configuration files
+│   │   └── settings.py         # App configuration settings
+│   ├── database/               # Database related code
+│   │   └── db_provider.py      # Handles database connections
+│   └── wsgi.py                 # WSGI entry point for deployment
+│
+├── frontend/               # Frontend source code
+│   ├── node_modules/       # Dependencies for React
+│   ├── public/             # Static files
+│   │   └── index.html      # Main HTML entry point
+│   ├── src/                # React source files
+│   │   ├── App.js          # Main React component
+│   │   └── index.js        # React entry point
+│   ├── package.json        # npm configuration file
+│   └── package-lock.json   # npm lock file
+│
+├── .gitignore              # Git ignore file
+├── .env-template           # Template for environment variables
+├── config.yml              # Additional configuration file
+├── project_structure.txt   # This file - describing project structure
+├── README.md               # Project documentation
+├── requirements.txt        # Python dependencies
+└── run_app_locally.sh      # Shell script to run the app locally
+

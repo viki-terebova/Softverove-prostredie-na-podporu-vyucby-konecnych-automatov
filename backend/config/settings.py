@@ -11,7 +11,7 @@ class Settings:
         config_path = os.path.join(os.path.dirname(__file__), "../../config.yml")
         if os.path.exists(config_path):
             with open(config_path, "r") as config_file:
-                self.config = yaml.safe_load(config_file)
+                return yaml.safe_load(config_file)
         else:
             raise FileNotFoundError("❌ config.yml not found!")
 
@@ -23,8 +23,8 @@ class Settings:
             value = value.get(key, None) if isinstance(value, dict) else None
 
         if isinstance(value, str) and value.startswith("${") and value.endswith("}"):
-            env_var = value.strip("${}")
-            return os.getenv(env_var, default)
+            env_value = value.strip("${}")
+            return os.getenv(env_value, default)
 
         return value if value is not None else default
 

@@ -32,14 +32,25 @@ body, html {
     overflow: hidden;
 }
 
-.start-welcome-text{
-    text-shadow: 0 5px 7px rgba(0,0,0,0.4),0 -5px 1px #fff;
-    font-weight: bold;
-    font-size: 3em;
-
-    color: #022c00;
+.start-page::before{
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1;
 }
 
-.start-button{
+.start-welcome-text{
+    position: relative;
+    z-index: 2;
+}
 
+.start-welcome-text{
+    text-shadow: 0 10px 7px rgba(0,0,0,0.4);
+
+    font-size: 4em;
+    color: #41ff41;
 }

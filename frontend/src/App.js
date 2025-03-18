@@ -9,8 +9,8 @@ function App() {
 
   return (
     <div className="start-page">
-      <h1 className="start-welcome-text">Welcome to FiniAutoma</h1>
-      <Button text="Play" onClick={handlePlay} className="start-button"/>
+      <h1 className="start-welcome-text">Welcome to<br/>FiniAutoma</h1>
+      <Button text="Play" onClick={handlePlay} />
     </div>
   );
 }

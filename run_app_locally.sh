@@ -31,7 +31,16 @@ cd ..
 echo "🟢 Starting React frontend..."
 cd frontend
 
-if [ ! -d "node_modules" ] || [ ! -f "node_modules/.bin/react-scripts" ]; then
+# Load environment variables from .env file if it exists
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# Default to false if the variable is not set
+REINSTALL_DEPS=${REINSTALL_DEPENDENCIES:-true}
+
+# Check if node_modules directory or react-scripts is missing OR env variable is true
+if [ "$REINSTALL_DEPS" == "true" ] || [ ! -d "node_modules" ] || [ ! -f "node_modules/.bin/react-scripts" ]; then
     echo "📦 Installing frontend dependencies..."
     rm -rf node_modules package-lock.json
     npm cache clean --force

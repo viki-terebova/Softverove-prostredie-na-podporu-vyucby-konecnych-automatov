@@ -1,17 +1,20 @@
 import React from "react";
-import Button from "./components/Button";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "./style.css";
 
-function App() {
-  const handlePlay = () => {
-    console.log("Playing");
-  }
+// pages
+import HomePage from "./pages/Home";
+import AuthentificationPage from "./pages/Authentification";
 
+function App() {
   return (
-    <div className="start-page">
-      <h1 className="start-welcome-text">Welcome to<br/>FiniAutoma</h1>
-      <Button text="Play" onClick={handlePlay} />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<HomePage />}></Route>
+        <Route path="/login" element={<AuthentificationPage />}></Route>
+        
+      </Routes>
+    </BrowserRouter>
   );
 }
 

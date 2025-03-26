@@ -12,12 +12,12 @@ function AuthentificationPage() {
 
     const handleLogin = () => {
         console.log("Logging in...");
-        navigate("/levels");
+        navigate("/categories");
     };
 
     const handleRegister = () => {
         console.log("Registering...");
-        navigate("/levels");
+        navigate("/categories");
     };
 
     return (

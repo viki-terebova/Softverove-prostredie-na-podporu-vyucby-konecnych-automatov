@@ -9,4 +9,9 @@ database:
   port: 5432
   user: "fini_user"
   password: ${DB_PASSWORD}
-  db_name: "postgres"
+  db_name: "finiautoma_dev"
+  schema: "data"
+default:
+  user_id: 0
+  user_name: "Default"
+  

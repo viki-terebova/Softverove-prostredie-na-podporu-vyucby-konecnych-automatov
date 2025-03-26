@@ -21,7 +21,7 @@ body, html {
 .start-page {
     height: 100vh;
     width: 100vw;
-    background-image:  url('../public/images/background2.jpg');
+    background-image: url('../public/images/background2.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -41,6 +41,7 @@ body, html {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.7);
+    pointer-events: none;
     z-index: 1;
 }
 
@@ -120,4 +121,37 @@ a {
 
 a:hover {
     text-decoration: underline;
+}
+
+.categories-page {
+    overflow: auto;
+    background-image: url('../public/images/background3.jpg');
+}
+
+.levels-page {
+    overflow: auto;
+    background-image: url('../public/images/background4.jpg');
+}
+
+.title {
+    font-size: 3em;
+    font-weight: bold;
+    text-align: center;
+    color: #ffffff;
+    padding: 20px;
+    padding-bottom: 60px;
+    flex-shrink: 0;
+}
+
+.circle-container {
+    position: relative;
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+    margin: 0 auto;
+}
+
+.circle-node-wrapper {
+    position: absolute;
+    transform: translate(-50%, -50%);
 }

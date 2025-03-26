@@ -40,7 +40,7 @@ fi
 REINSTALL_DEPS=${REINSTALL_DEPENDENCIES:-false}
 
 # Check if node_modules directory or react-scripts is missing OR env variable is true
-if [ "$REINSTALL_DEPS" == "true" ] || [ ! -d "node_modules" ] || [ ! -f "node_modules/.bin/react-scripts" ]; then
+if [ "$REINSTALL_DEPS" == "true" ]; then
     echo "📦 Installing frontend dependencies..."
     rm -rf node_modules package-lock.json
     npm cache clean --force

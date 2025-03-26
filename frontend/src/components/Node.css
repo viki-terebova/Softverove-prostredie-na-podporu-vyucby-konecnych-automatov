@@ -1,0 +1,58 @@
+.level-node {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 50px;
+    cursor: pointer;
+    margin: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+}
+
+.category-node {
+    width: 350px;
+    min-height: 100px;
+    padding: 16px;
+    border-radius: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 500;
+    font-size: 1.4em;
+    text-align: center;
+    cursor: pointer;
+    margin: 10px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+    line-height: 1.4;
+}
+
+.level-node span, .category-node span{
+    font-size: inherit;
+}
+
+.level-node.passed, .category-node.passed {
+    background-color: #008f07;
+    color: white;
+    box-shadow: 0 4px 10px rgba(0, 143, 7, 0.5);
+}
+
+.level-node.locked, .category-node.locked {
+    background-color: #9ca3af;
+    color: white;
+    box-shadow: 0 2px 6px rgba(156, 163, 175, 0.5);
+}
+
+.level-node.in_progress, .category-node.in_progress {
+    background-color: #ff9e1e;
+    color: white;
+    box-shadow: 0 2px 6px rgba(255, 73, 16, 0.5);
+}
+
+.level-node:hover, .category-node:hover {
+    transform: scale(1.05);
+}

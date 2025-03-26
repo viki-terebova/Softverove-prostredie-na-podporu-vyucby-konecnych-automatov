@@ -44,7 +44,7 @@ const LevelsPage = () => {
                     const y = index * spacing;
                     return (
                         <div
-                            key={level.index}
+                            key={index}
                             className="circle-node-wrapper"
                             style={{
                                 left: `${x}px`,

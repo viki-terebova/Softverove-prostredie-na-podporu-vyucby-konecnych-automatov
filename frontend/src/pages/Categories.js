@@ -7,70 +7,86 @@ import './../style.css';
 
 
 const test_Categories = [
-    {category: "levels", 
+    {
+        category: "levels",
         status: "passed",
         levels: [
-        {level_number: 1, status: "passed"},
-        {level_number: 2, status: "passed"},
-        {level_number: 3, status: "passed"},
-        {level_number: 4, status: false},
-    ]},
-    {category: "Intermediate", 
-    status: "passed",
-    levels: [
-        {level_number: 1, status: "in_progress"},
-        {level_number: 2, status: "in_progress"},
-        {level_number: 3, status: "locked" },
-        {level_number: 4, status: "locked" },
-    ]},
-    {category: "Intermediate2", 
-    status: "passed",
-    levels: [
-        {level_number: 1, status: "locked" },
-        {level_number: 2, status: "locked" },
-        {level_number: 3, status: "locked" },
-        {level_number: 4, status: "locked" },
-    ]},
-    {category: "Intermediate3", 
-    status:  "in_progress",
-    levels: [
-        {level_number: 1, status: "locked" },
-        {level_number: 2, status: "locked" },
-        {level_number: 3, status: "locked" },
-        {level_number: 4, status: "locked" },
-    ]},
-    {category: "Intermediate4", 
-    status: "locked" ,
-    levels: [
-        {level_number: 1, status: "locked" },
-        {level_number: 2, status: "locked" },
-        {level_number: 3, status: "locked" },
-        {level_number: 4, status: "locked" },
-    ]},
-    {category: "Intermediate42", 
-    status: "locked" ,
-    levels: [
-        {level_number: 1, status: true},
-        {level_number: 2, status: true},
-        {level_number: 3, status: false},
-        {level_number: 4, status: false},
-    ]},
-    {category: "Intermediate43", 
-    status: "locked" ,
-    levels: [
-        {level_number: 1, status: true},
-        {level_number: 2, status: true},
-        {level_number: 3, status: false},
-        {level_number: 4, status: false},
-    ]},
-    {category: "Intermediate44", 
-    status: "locked" ,
-    levels: [
-        {level_number: 1, status: true},
-        {level_number: 2, status: true},
-        {level_number: 3, status: false},
-        {level_number: 4, status: false},
-    ]},
+            { level_number: 1, status: "passed" },
+            { level_number: 2, status: "passed" },
+            { level_number: 3, status: "passed" },
+            { level_number: 4, status: false },
+        ]
+    },
+    {
+        category: "Intermediate",
+        status: "passed",
+        levels: [
+            { level_number: 1, status: "in_progress" },
+            { level_number: 2, status: "in_progress" },
+            { level_number: 3, status: "locked" },
+            { level_number: 4, status: "locked" },
+        ]
+    },
+    {
+        category: "Intermediate2",
+        status: "passed",
+        levels: [
+            { level_number: 1, status: "locked" },
+            { level_number: 2, status: "locked" },
+            { level_number: 3, status: "locked" },
+            { level_number: 4, status: "locked" },
+        ]
+    },
+    {
+        category: "Intermediate3",
+        status: "in_progress",
+        levels: [
+            { level_number: 1, status: "locked" },
+            { level_number: 2, status: "locked" },
+            { level_number: 3, status: "locked" },
+            { level_number: 4, status: "locked" },
+        ]
+    },
+    {
+        category: "Intermediate4",
+        status: "locked",
+        levels: [
+            { level_number: 1, status: "locked" },
+            { level_number: 2, status: "locked" },
+            { level_number: 3, status: "locked" },
+            { level_number: 4, status: "locked" },
+        ]
+    },
+    {
+        category: "Intermediate42",
+        status: "locked",
+        levels: [
+            { level_number: 1, status: true },
+            { level_number: 2, status: true },
+            { level_number: 3, status: false },
+            { level_number: 4, status: false },
+        ]
+    },
+    {
+        category: "Intermediate43",
+        status: "locked",
+        levels: [
+            { level_number: 1, status: true },
+            { level_number: 2, status: true },
+            { level_number: 3, status: false },
+            { level_number: 4, status: false },
+        ]
+    },
+    {
+        category: "Intermediate44",
+        status: "locked",
+        levels: [
+            { level_number: 1, status: true },
+            { level_number: 2, status: true },
+            { level_number: 3, status: false },
+            { level_number: 4, status: false },
+        ]
+    },
 ];
 
 
@@ -91,7 +107,7 @@ const CategoriesPage = () => {
                     const y = index * spacing;
                     return (
                         <div
-                            key={category.index}
+                            key={index}
                             className="circle-node-wrapper"
                             style={{
                                 left: `${x}px`,
@@ -99,10 +115,10 @@ const CategoriesPage = () => {
                             }}
                             onClick={() => navigate(`/${category.category}`)}
                         >
-                        <CategoryNode
-                            key={index}
-                            name={index+1+ '. ' + category.category}
-                            status={category.status}
+                            <CategoryNode
+                                key={index}
+                                name={index + 1 + '. ' + category.category}
+                                status={category.status}
                             />
                         </div>
                     );

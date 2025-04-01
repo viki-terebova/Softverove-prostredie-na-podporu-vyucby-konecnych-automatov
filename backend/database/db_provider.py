@@ -9,7 +9,7 @@ class DBProvider:
         self.db_type = settings.get_conf("database.type", "postgresql")
         self.host = settings.get_conf("database.host", "localhost")
         self.port = settings.get_conf("database.port", 5432)
-        self.user = settings.get_conf("database.user", "fini_user")
+        self.user = settings.get_conf("database.user", "postgres")
         self.password = settings.get_conf("database.password")
         self.db_name = settings.get_conf("database.db_name", "finiautoma_dev")
         self.connection = self.connect()

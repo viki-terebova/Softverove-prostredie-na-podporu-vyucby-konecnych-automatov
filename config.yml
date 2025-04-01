@@ -7,7 +7,7 @@ database:
   type: "postgresql"
   host: "localhost"
   port: 5432
-  user: "fini_user"
+  user: "postgres"
   password: ${DB_PASSWORD}
   db_name: "finiautoma_dev"
   schema: "data"

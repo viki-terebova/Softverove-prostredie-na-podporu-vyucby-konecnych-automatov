@@ -39,13 +39,22 @@ class DBProvider:
             with self.connection.cursor() as cursor:
                 if user_id is None:
                     cursor.execute(
-                        """SELECT * FROM data.categories WHERE owner_id IS NULL;""")
-                    result = cursor.fetchall()
+                        """SELECT * FROM data.categories WHERE owner_id IS NULL ORDER BY category_order;""")
                 else:
                     cursor.execute(
-                        """SELECT * FROM data.categories WHERE owner_id = %s;""", 
+                        """SELECT * FROM data.categories WHERE owner_id = %s ORDER BY category_order;""", 
                         (user_id,))
-                    result = cursor.fetchall()
+                rows = cursor.fetchall()
+                colnames = [desc[0] for desc in cursor.description]
+
+                result = []
+                for row in rows:
+                    item = {}
+                    for i in range(len(colnames)):
+                        item[colnames[i]] = row[i]
+                    result.append(item)
+
+            return result
             return json.dumps(result, default=to_json)
         except Exception as e:
             self.connection.rollback()

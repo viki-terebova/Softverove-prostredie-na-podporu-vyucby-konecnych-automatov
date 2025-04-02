@@ -9,7 +9,7 @@ db: DBProvider
 def home():
     return jsonify({"message": "Welcome to FiniAutoma!"})
 
-@app.route("/get_categories", methods=["GET"])
+@app.route("/api/v1/get_categories", methods=["GET"])
 def get_categories():
     categories = db.get_categories_for_user()
 

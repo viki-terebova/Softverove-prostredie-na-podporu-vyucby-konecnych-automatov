@@ -21,7 +21,7 @@ body, html {
 .start-page {
     height: 100vh;
     width: 100vw;
-    background-image: url('../public/images/background2.jpg');
+    background-image: url('/images/background2.jpg');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -125,12 +125,12 @@ a:hover {
 
 .categories-page {
     overflow: auto;
-    background-image: url('../public/images/background3.jpg');
+    background-image: url('images/background3.jpg');
 }
 
 .levels-page {
     overflow: auto;
-    background-image: url('../public/images/background4.jpg');
+    background-image: url('images/background4.jpg');
 }
 
 .title {
@@ -157,7 +157,7 @@ a:hover {
 }
 
 .level-page {
-    background-image: url("../public/images/background4.jpg"); 
+    background-image: url("images/background4.jpg"); 
     background-size: cover;
     background-position: center;
     height: 100vh;
@@ -255,7 +255,7 @@ a:hover {
 
 
 .editor-page {
-  background-image: url("../public/images/background4.jpg"); 
+  background-image: url("images/background4.jpg"); 
   background-size: cover;
   background-position: center;
   height: 100vh;

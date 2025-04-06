@@ -1,26 +1,14 @@
 {
-  "name": "bakalarska-praca",
-  "version": "1.0.0",
-  "description": "Softvérové prostredie na podporu výučby konečných automatov",
-  "main": "index.js",
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "proxy": "http://localhost:5000"
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/viki-terebova/Bakalarska-praca.git"
-  },
-  "keywords": [],
-  "author": "Viktoria Terebova <terebova2@uniba.sk>",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/viki-terebova/Bakalarska-praca/issues",
-    "email": "terebova2@uniba.sk"
-  },
-  "homepage": "/",
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -28,16 +16,12 @@
     "react-router-dom": "^7.4.0",
     "react-konva": "^19.0.3"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "devDependencies": {
+    "@eslint/js": "^9.21.0",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "globals": "^15.15.0",
+    "vite": "^6.2.0"
   }
 }

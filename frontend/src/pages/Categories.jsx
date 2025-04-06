@@ -15,7 +15,7 @@ const CategoriesPage = () => {
 
 
     useEffect(() => {
-        fetch("api/v1/get_categories")
+        fetch("/api/v1/get_categories")
             .then(res => res.json())
             .then(data => {
                 if (!data.error) {

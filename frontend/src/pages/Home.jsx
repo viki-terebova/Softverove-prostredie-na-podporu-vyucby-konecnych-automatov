@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import Button from "../components/Button";
+import MenuStart from "../components/MenuStart";
 
 const HomePage = () => {
     const navigate = useNavigate();	
@@ -11,8 +12,9 @@ const HomePage = () => {
 
     return (
         <div className="start-page">
-        <h1 className="start-welcome-text">Welcome to<br/>FiniAutoma</h1>
-        <Button text="Play" onClick={handlePlay} />
+            <MenuStart />
+            <h1 className="start-welcome-text">Welcome to<br/>FiniAutoma</h1>
+            <Button text="Play" onClick={handlePlay} />
         </div>
     );
 }

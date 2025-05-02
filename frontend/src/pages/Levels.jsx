@@ -1,67 +1,85 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-// components
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import LevelNode from "../components/LevelNode";
 import './../style.css';
-
-
-const test_Levels = [
-    {category: "levels", 
-        status: "passed",
-        levels: [
-        {level_number: 1, status: "passed"},
-        {level_number: 2, status: "passed"},
-        {level_number: 3, status: "passed"},
-        {level_number: 4, status: "in_progress"},
-        {level_number: 5, status: "locked"},
-        {level_number: 11, status: "locked"},  
-        {level_number: 4, status: "locked"},
-        {level_number: 5, status: "locked"},
-        {level_number: 11, status: "locked"}, 
-        {level_number: 4, status: "locked"},
-        {level_number: 5, status: "locked"},
-        {level_number: 11, status: "locked"},   
-    ]},
-];
-
+import Menu from "../components/Menu";
+import Loading from "../components/Loading";
 
 const LevelsPage = () => {
     const radius = 200;
     const spacing = 120;
     const center = window.innerWidth / 2;
 
-    const [selectedCategory, setSelectedCategory] = useState(test_Levels[0]);
+    const { categoryId } = useParams();
+    const [categoryName, setCategoryName] = useState("...");
+
+    const [levels, setLevels] = useState([]);
     const navigate = useNavigate();
+
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        setLoading(true);
+        fetch(`/api/v1/category/${categoryId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.error) {
+                    setLevels(data);
+                } else {
+                    console.error("Backend error:", data.error);
+                }
+            })
+            .catch(err => console.error("Fetch error:", err))
+            .finally(() => setLoading(false));
+    }, [categoryId]);
+
+    useEffect(() => {
+        fetch("/api/v1/get_categories")
+            .then(res => res.json())
+            .then(data => {
+                const category = data.find(cat => cat.id === categoryId);
+                if (category) {
+                    setCategoryName(category.title);
+                } else {
+                    setCategoryName("Unknown");
+                }
+            })
+            .catch(err => console.error("Category fetch error:", err));
+    }, [categoryId]);
 
     return (
         <div className="start-page levels-page">
-            <h1 className="title">{selectedCategory.category}</h1>
+            <Menu />
+            <h1 className="title">Levels for category:<br/><b>{categoryName}</b></h1>
             <div className="circle-container">
-                {selectedCategory.levels.map((level, index) => {
-                    const angle = (2 * Math.PI * index) / selectedCategory.levels.length;
+                {loading ? (
+                    <Loading message="Loading levels..." />
+                ) : levels.length === 0 ? (
+                    <p className="no-levels-message">No levels found.</p>
+                ) : (
+                    levels.map((level, index) => {
+                    const angle = (2 * Math.PI * index) / levels.length;
                     const x = center + radius * Math.cos(angle);
                     const y = index * spacing;
                     return (
                         <div
-                            key={index}
-                            className="circle-node-wrapper"
-                            style={{
-                                left: `${x}px`,
-                                top: `${y}px`,
-                            }}
-                            onClick={() => navigate(`/level/${level.level_number}`)}
+                        key={level.id}
+                        className="circle-node-wrapper"
+                        style={{
+                            left: `${x}px`,
+                            top: `${y}px`,
+                        }}
+                        onClick={() => navigate(`/level/${level.id}`)}
                         >
                         <LevelNode
-                            key={index}
                             level_number={level.level_number}
-                            status={level.status}
-                            />
+                            status={"passed"}
+                        />
                         </div>
                     );
-                })}
+                    })
+                    )}
             </div>
-
         </div>
     );
 };

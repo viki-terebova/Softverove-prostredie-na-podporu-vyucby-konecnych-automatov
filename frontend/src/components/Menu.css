@@ -1,0 +1,47 @@
+/* Top navbar customization */
+.fini-navbar {
+  padding: 10px 0px;
+  z-index: 4;
+}
+
+.navbar {
+  background-color: #234b2500 !important;
+  width: 5%;
+}
+
+.navbar-logo {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
+  padding-right: 5px;
+}
+
+.navbar-icon-button {
+  font-size: 1rem;
+  padding: 4px 6px;
+  background-color: #008f0781 !important;
+  border: none;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 50px;
+  height:40px;
+  color: white !important;
+}
+
+.navbar-icon-button:hover {
+  background-color: #00570475 !important;
+}
+
+.dropdown-item {
+  color: Black !important;
+  padding: 10px 16px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.dropdown-item:hover {
+  background-color: #008f07 !important; /* teal highlight */
+  color: #ffffff !important;
+  border-radius: 6px;
+}

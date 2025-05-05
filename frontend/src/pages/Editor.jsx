@@ -83,6 +83,26 @@ const EditorPage = () => {
       .then(res => res.json())
       .then(data => setLevel(data))
       .catch(err => console.error("Failed to load level", err));
+
+      fetch(`/api/v1/achieved_level?level_id=${levelId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.exists) {
+          setStates(data.states);
+          setTransitions(data.transitions);
+
+          localStorage.setItem('automat_states', JSON.stringify(data.states));
+          localStorage.setItem('automat_transitions', JSON.stringify(data.transitions));
+    
+          const qNumbers = data.states
+            .filter(s => /^q\d+$/.test(s.id))
+            .map(s => parseInt(s.id.slice(1)));
+          if (qNumbers.length > 0) {
+            setStateCounter(Math.max(...qNumbers) + 1);
+          }
+        }
+      })
+      .catch(err => console.error("Failed to load achieved automat", err));
     }
   }, [levelId]);
 
@@ -134,7 +154,10 @@ const EditorPage = () => {
   };
 
   const handleTransitionClick = (index) => {
-    const confirmDelete = window.confirm("Delete this transition?");
+    if (!deleteTransitionMode) return;
+    const transition = transitions[index];
+    const value = transition.value;
+    const confirmDelete = window.confirm(`Delete transition with value ${value}€?`);
     if (confirmDelete) {
       setTransitions(prev => prev.filter((_, i) => i !== index));
     }
@@ -316,7 +339,7 @@ const EditorPage = () => {
             x↗
           </div>
           <div
-            className={`reset-button ${deleteTransitionMode ? "active" : ""}`}
+            className={`reset-button`}
             onClick={resetAutomat}
             title="Reset"
           >

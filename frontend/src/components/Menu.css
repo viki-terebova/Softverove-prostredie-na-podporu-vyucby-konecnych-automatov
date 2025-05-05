@@ -6,7 +6,6 @@
 
 .navbar {
   background-color: #234b2500 !important;
-  width: 5%;
 }
 
 .navbar-logo {
@@ -44,4 +43,11 @@
   background-color: #008f07 !important; /* teal highlight */
   color: #ffffff !important;
   border-radius: 6px;
+}
+
+.navbar-score {
+  color: gold;
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-right: 10px;
 }

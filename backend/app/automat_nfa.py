@@ -23,6 +23,8 @@ class AutomatNFA:
     def _build_nfa(self):
         transition_function = {}
 
+        has_transition_from_start = False
+
         for t in self.transitions_data:
             from_state = t["from"]
             to_state = t["to"]
@@ -39,6 +41,16 @@ class AutomatNFA:
                 transition_function[from_state][letter] = set()
 
             transition_function[from_state][letter].add(to_state)
+
+            if from_state == self.start_state:
+                has_transition_from_start = True
+        
+        if not has_transition_from_start:
+            raise Exception(
+                f"The initial state '{self.start_state}' has no transitions defined. "
+                "Please create at least one transition from the start state."
+            )
+
 
         return NFA(
             states=self.states,

@@ -50,12 +50,15 @@ const CategoriesPage = () => {
                                     left: `${x}px`,
                                     top: `${y}px`,
                                 }}
-                                onClick={() => navigate(`/category/${category.id}`)}
+                                
+                                onClick={() => {if (category.status !== "locked") {
+                                    navigate(`/category/${category.id}`)};
+                                }}
                             >
                                 <CategoryNode
                                     key={index}
                                     name={`${index + 1}. ${category.title}`}
-                                    status={"passed"}
+                                    status={category.status}
                                 />
                             </div>
                         );

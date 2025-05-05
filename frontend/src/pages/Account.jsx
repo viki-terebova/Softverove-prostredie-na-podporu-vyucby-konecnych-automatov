@@ -65,9 +65,8 @@ export default function AccountPage() {
             </div>
             )}
             <Menu />
+            <h1 className="title2">Account Settings</h1>
             <div className="form-container">
-                <h2 className="text-center mb-3">Account Settings</h2>
-
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label mb-0 me-3" style={{ minWidth: "100px" }}>
                         Mail: 

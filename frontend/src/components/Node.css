@@ -42,9 +42,10 @@
 }
 
 .level-node.locked, .category-node.locked {
-    background-color: #9ca3af;
+    background-color: rgba(156, 163, 175, 0.5);
     color: white;
     box-shadow: 0 2px 6px rgba(156, 163, 175, 0.5);
+    cursor: default;
 }
 
 .level-node.in_progress, .category-node.in_progress {

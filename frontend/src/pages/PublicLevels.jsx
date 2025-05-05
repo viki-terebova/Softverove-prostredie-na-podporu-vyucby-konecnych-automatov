@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import './../style.css';
 
 import Menu from "../components/Menu";
@@ -7,13 +8,14 @@ import Loading from "../components/Loading";
 export default function PublicLevelsPage() {
   const [levels, setLevels] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-  const [filters, setFilters] = useState({ username: "", level_name: "", created_at: "", });
+  const [filters, setFilters] = useState({ username: "", level_name: "", created_at: "" });
   const [loading, setLoading] = useState(true);
-  
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     setLoading(true);
-    fetch("/api/v1/public_levels")
+    fetch("/api/v1/get_public_levels")
       .then((res) => res.json())
       .then((data) => {
         setLevels(data);
@@ -76,7 +78,10 @@ export default function PublicLevelsPage() {
             </thead>
             <tbody>
               {sortedLevels.map((level, index) => (
-                <tr key={index}>
+                <tr 
+                  key={index}
+                  onClick={() => navigate(`/level/${level.id}`)}
+                >
                   <td>{level.level_name}</td>
                   <td>{level.username}</td>
                   <td>

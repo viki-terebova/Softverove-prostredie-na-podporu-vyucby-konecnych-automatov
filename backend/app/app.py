@@ -52,6 +52,7 @@ def register():
 
     try:
         user_id = database.register_user(username, mail, password)
+        database.create_user_score(user_id)
         session["user_id"] = user_id
         return jsonify({"message": "User registered", "user_id": user_id}), 200
 
@@ -103,22 +104,65 @@ def load_user(user_id):
 @app.route("/api/v1/get_categories", methods=["GET"])
 @login_required
 def get_categories():
-    try:
-        categories = database.get_categories_for_user()
-        if categories is None:
-            return jsonify({"error": "Database error"}), 500
-        return jsonify(categories) 
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    categories = database.get_categories()
+
+    if categories is None:
+        return jsonify({"error": "Database error"}), 500
+
+    status_categories = []
+    passed_found = 0
+
+    for category in sorted(categories, key=lambda c: c["category_order"]):
+        category_id = category["id"]
+
+        levels = database.get_levels_for_category(category_id)
+        level_ids = [level["id"] for level in levels]
+
+        achieved_levels = database.get_achieved_levels_for_user_by_category(
+            user_id=current_user.id,
+            category_id=category_id
+        )
+        achieved_ids = {level["level_id"] for level in achieved_levels}
+
+        if all(lid in achieved_ids for lid in level_ids):
+            status = "passed"
+            passed_found += 1
+        elif passed_found == category["category_order"]:
+            status = "in_progress"
+        else:
+            status = "locked"
+
+        category_with_status = {**category, "status": status}
+        status_categories.append(category_with_status)
+
+    return jsonify(status_categories)
 
 @app.route("/api/v1/category/<category_uuid>", methods=["GET"])
 @login_required
 def get_category_levels(category_uuid):
     levels = database.get_levels_for_category(category_uuid=category_uuid)
+    achieved_levels = database.get_achieved_levels_for_user_by_category(
+        user_id=current_user.id,
+        category_id=category_uuid
+    )
+    achieved_dict = {level["level_id"]: level for level in achieved_levels}
 
-    if levels is None:
-        return jsonify({"error": "Database error"}), 500
-    return jsonify(levels)
+    status_levels = []
+    passed_found = 0
+    for level in sorted(levels, key=lambda l: l["level_number"]):
+        level_id = level["id"]
+        if level_id in achieved_dict:
+            status = "passed"
+            passed_found += 1
+        elif passed_found == level["level_number"]:
+            status = "in_progress"
+        else:
+            status = "locked"
+
+        level_with_status = {**level, "status": status}
+        status_levels.append(level_with_status)
+
+    return jsonify(status_levels)
 
 @app.route("/api/v1/level", methods=["GET"])
 def get_level_by_uuid():
@@ -134,7 +178,7 @@ def get_level_by_uuid():
 
     return jsonify(level_data)
 
-@app.route("/api/v1/public_levels", methods=["GET"])
+@app.route("/api/v1/get_public_levels", methods=["GET"])
 @login_required
 def get_public_levels_from_db():
     levels = database.get_public_levels()
@@ -166,6 +210,95 @@ def update_account():
         return jsonify({"message": "Username updated."}), 200
     return jsonify({"error": "Invalid data"}), 400
 
+@app.route("/api/v1/get_user_score")
+@login_required
+def get_user_score():
+    score_row = database.get_user_score(current_user.id)
+    if score_row:
+        return jsonify({"score": score_row["user_score"]})
+    else:
+        return jsonify({"score": 0})
+
+@app.route("/api/v1/test_automat", methods=["POST"])
+@login_required
+def test_automat():
+    data = request.get_json()
+    level_id = data.get("level_id", None)
+    if not level_id:
+        return jsonify({"error": "Missing level_id"}), 400
+
+    level_data = database.get_level_details(level_id)
+    
+    states = data.get("states")
+    transitions_data = data.get("transitions")
+    start_state = data.get("start_state")
+    accept_states = data.get("accept_states")
+    setup = level_data.get("setup")
+
+    if not transitions_data:
+        return jsonify({"error": "Missing transitions data"}), 400
+    if not states:
+        return jsonify({"error": "Missing states data"}), 400
+    if not start_state:
+        return jsonify({"error": "Missing start state"}), 400
+    if not accept_states:
+        return jsonify({"error": "Missing accept states"}), 400
+    if not setup:
+        return jsonify({"error": "Missing setup data"}), 400
+
+    try:
+        automat_nfa = AutomatNFA(states, transitions_data, start_state, accept_states, setup)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+    validator = ValidatorNFA(automat_nfa, setup)
+    result = validator.run()
+
+    if result["accepted"]:
+        score = 5
+        database.save_achieved_level(
+            user_id=current_user.id,
+            level_id=level_id,
+            score=score,
+            level_setup={
+                "states": states,
+                "transitions": transitions_data
+            }
+        )
+        database.increment_user_score(user_id=current_user.id, score=score)
+
+    print(result)
+    return jsonify(result)
+
+@app.route("/api/v1/achieved_level", methods=["GET"])
+@login_required
+def get_achieved_level():
+    level_id = request.args.get("level_id")
+    user_id = current_user.id
+
+    result = database.get_achieved_level(level_id, user_id)
+    if result is None:
+        return jsonify({"exists": False})
+
+    return jsonify({
+        "exists": True,
+        "states": result["level_setup"]["states"],
+        "transitions": result["level_setup"]["transitions"],
+        "score": result["score"]
+    })
+
+@app.route("/api/v1/get_user_levels", methods=["GET"])
+def get_user_levels():
+    user_id = current_user.id
+    levels = database.get_user_levels(user_id)
+
+    if levels is None:
+        return jsonify({"error": "Database error"}), 500
+
+    return jsonify(levels)
+
+
+
 # {'states': ['Start', 'Accept', 'q3', 'q4', 'q5', 'q7', 'q8'], 
 #  'start_state': 'Start', 
 #  'accept_states': ['Accept'], 
@@ -190,58 +323,6 @@ def update_account():
         # "max_states": ,
         # }
 # }
-
-@app.route("/api/v1/test_automat", methods=["POST"])
-@login_required
-def test_automat():
-    data = request.get_json()
-    level_data = database.get_level_details(data.get("level_id", None))
-    
-    states = data.get("states")
-    transitions_data = data.get("transitions")
-    start_state = data.get("start_state")
-    accept_states = data.get("accept_states")
-    setup = level_data.get("setup")
-
-    automat_nfa = AutomatNFA(states, transitions_data, start_state, accept_states, setup)
-
-    validator = ValidatorNFA(automat_nfa, setup)
-    result = validator.validate()
-    print(result)
-    return jsonify(result)
-
-
-
-
-# @app.route("/api/v1/test-fa", methods=["GET"])
-# def test_fa():
-#     # Define a DFA that accepts strings ending in '1'
-#     dfa = DFA(
-#         states={'q0', 'q1'},
-#         input_symbols={'0', '1'},
-#         transitions={
-#             'q0': {'0': 'q0', '1': 'q1'},
-#             'q1': {'0': 'q0', '1': 'q1'}
-#         },
-#         initial_state='q0',
-#         final_states={'q1'}
-#     )
-
-#     # Test a sample input
-#     sample_input = "01001"
-#     result = dfa.accepts_input(sample_input)
-
-#     # Return structure + result
-#     return jsonify({
-#         "states": list(dfa.states),
-#         "alphabet": list(dfa.input_symbols),
-#         "transitions": dfa.transitions,
-#         "start": dfa.initial_state,
-#         "accept": list(dfa.final_states),
-#         "test_string": sample_input,
-#         "accepted": result
-#     })
-
 
 # Okay, I have a thought, I would like to do the validation in this way:
 # the level will have stored, alphabet - money values,

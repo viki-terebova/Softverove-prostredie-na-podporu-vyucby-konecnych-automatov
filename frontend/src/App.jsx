@@ -11,6 +11,8 @@ import LevelPage from "./pages/Level";
 import EditorPage from "./pages/Editor";
 import PublicLevelsPage from "./pages/PublicLevels";
 import AccountPage from "./pages/Account";
+import UserLevelsPage from "./pages/UserLevels";
+import LevelEditorPage from "./pages/LevelEditor";
 
 import AuthRequired from "./components/AuthRequired";
 import Loading from "./components/Loading";
@@ -55,6 +57,8 @@ function App() {
           <Route path="/editor/:levelId" element={<EditorPage />} />
           <Route path="/public_levels" element={<PublicLevelsPage />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/user_levels" element={<UserLevelsPage />} />
+          <Route path="/level_editor/:levelId" element={<LevelEditorPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

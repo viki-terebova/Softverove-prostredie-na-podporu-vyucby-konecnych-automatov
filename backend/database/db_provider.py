@@ -127,22 +127,17 @@ class DBProvider:
             self.connection.rollback()
             raise ValueError(f"❌ SQL error in verify_password: {e}")
 
-    def get_categories_for_user(self, user_id=None):
+    def get_categories(self):
         try:
             with self.connection.cursor() as cursor:
-                if user_id is None:
-                    cursor.execute(
+                cursor.execute(
                         """SELECT * FROM data.categories WHERE owner_id IS NULL ORDER BY category_order;""")
-                else:
-                    cursor.execute(
-                        """SELECT * FROM data.categories WHERE owner_id = %s ORDER BY category_order;""", 
-                        (user_id,))
                 rows = cursor.fetchall()
                 colnames = [desc[0] for desc in cursor.description]
             return rows_to_json_list(rows, colnames)
         except Exception as e:
             self.connection.rollback()
-            raise ValueError(f"❌ SQL error in get_categories_for_user: {e}")
+            raise ValueError(f"❌ SQL error in get_categories: {e}")
 
     def get_levels_for_category(self, category_uuid=None, user_id=None):
         try:
@@ -194,3 +189,98 @@ class DBProvider:
         except Exception as e:
             self.connection.rollback()
             raise ValueError(f"❌ SQL error in get_public_levels: {e}")
+        
+    def save_achieved_level(self, user_id, level_id, score, level_setup):
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO data.achieved_levels (user_id, level_id, score, level_setup)
+                    VALUES (%s, %s, %s, %s);
+                """, (user_id, level_id, score, json.dumps(level_setup)))
+            self.connection.commit()
+            return True
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in save_achieved_level: {e}")
+        
+    def get_achieved_level(self, user_id, level_id):
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT * FROM data.achieved_levels WHERE user_id = %s AND level_id = %s;
+                """, (user_id, level_id))
+                row = cursor.fetchone()
+                colnames = [desc[0] for desc in cursor.description]
+            return rows_to_json_list([row], colnames)[0] if row else None
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in get_achieved_level: {e}")
+        
+
+    def get_achieved_levels_for_user_by_category(self, user_id, category_id):
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT level_id
+                    FROM data.achieved_levels
+                    JOIN data.levels ON achieved_levels.level_id = levels.id
+                    WHERE achieved_levels.user_id = %s AND levels.category_id = %s;
+                """, (user_id, category_id))
+                rows = cursor.fetchall()
+                colnames = [desc[0] for desc in cursor.description]
+            return rows_to_json_list(rows, colnames)
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in get_achieved_levels_for_user: {e}")
+        
+    def create_user_score(self, user_id, starting_score=0):
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO data.score (user_id, user_score)
+                    VALUES (%s, %s)
+                    ON CONFLICT (user_id) DO NOTHING;
+                """, (user_id, starting_score))
+            self.connection.commit()
+            return True
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in create_user_score: {e}")
+        
+    def get_user_score(self, user_id):
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT user_score FROM data.score WHERE user_id = %s;
+                """, (user_id,))
+                row = cursor.fetchone()
+                colnames = [desc[0] for desc in cursor.description]
+            return rows_to_json_list([row], colnames)[0] if row else None
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in get_user_score: {e}")
+        
+    def increment_user_score(self, user_id, value):
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE data.score SET user_score = user_score + %s WHERE user_id = %s;
+                """, (value, user_id))
+            self.connection.commit()
+            return True
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in increment_user_score: {e}")
+        
+    def get_user_levels(self, user_id):
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT * FROM data.levels WHERE owner_id = %s;
+                """, (user_id,))
+                rows = cursor.fetchall()
+                colnames = [desc[0] for desc in cursor.description]
+            return rows_to_json_list(rows, colnames)
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in get_user_levels: {e}")

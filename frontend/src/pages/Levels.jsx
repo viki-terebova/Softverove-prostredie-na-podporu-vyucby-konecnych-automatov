@@ -69,11 +69,15 @@ const LevelsPage = () => {
                             left: `${x}px`,
                             top: `${y}px`,
                         }}
-                        onClick={() => navigate(`/level/${level.id}`)}
-                        >
+                        onClick={() => {
+                            if (level.status !== "locked") {
+                                navigate(`/level/${level.id}`);
+                            }
+                        }}
+                    >
                         <LevelNode
                             level_number={level.level_number}
-                            status={"passed"}
+                            status={level.status}
                         />
                         </div>
                     );

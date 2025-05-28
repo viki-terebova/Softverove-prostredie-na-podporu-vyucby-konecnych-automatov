@@ -17,6 +17,8 @@ const LevelsPage = () => {
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(true);
+    const location = useLocation();
+    console.log("Location state:", location.state);
 
     useEffect(() => {
         setLoading(true);
@@ -71,7 +73,7 @@ const LevelsPage = () => {
                         }}
                         onClick={() => {
                             if (level.status !== "locked") {
-                                navigate(`/level/${level.id}`);
+                                navigate(`/level/${level.id}`, { state: { from: location.pathname } });
                             }
                         }}
                     >

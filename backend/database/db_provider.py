@@ -51,15 +51,14 @@ class DBProvider:
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute("""
-                    SELECT id, username, mail, user_password FROM data.users
+                    SELECT id, username, mail, user_password, user_role FROM data.users
                     WHERE username = %s OR mail = %s;
                 """, (username_or_mail, username_or_mail))
                 result = cursor.fetchone()
-
                 if result:
-                    user_id, username, mail, hashed_pw = result
+                    user_id, username, mail, hashed_pw, user_role = result
                     if check_password_hash(hashed_pw, password):
-                        return User(id=user_id, username=username, mail=mail, password_hash=hashed_pw)
+                        return User(id=user_id, username=username, mail=mail, password_hash=hashed_pw, user_role=user_role)
                     else:
                         return "wrong_password"
                 else:
@@ -98,6 +97,9 @@ class DBProvider:
                 """, (new_username, user_id))
             self.connection.commit()
             return True
+        except psycopg2.errors.UniqueViolation:
+            self.connection.rollback()
+            return {"error": "The username already exists."}
         except Exception as e:
             self.connection.rollback()
             raise ValueError(f"❌ SQL error in update_username: {e}")
@@ -131,7 +133,7 @@ class DBProvider:
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute(
-                        """SELECT * FROM data.categories WHERE owner_id IS NULL ORDER BY category_order;""")
+                        """SELECT * FROM data.categories ORDER BY category_order;""")
                 rows = cursor.fetchall()
                 colnames = [desc[0] for desc in cursor.description]
             return rows_to_json_list(rows, colnames)
@@ -173,9 +175,7 @@ class DBProvider:
             raise ValueError(f"❌ SQL error in get_level_details: {e}")
 
     def get_public_levels(self):
-        self.connection.rollback()
         try:
-            # TODO: WHERE owner_id is not null
             with self.connection.cursor() as cursor:
                 cursor.execute(
                     """SELECT du.username, dl.id as level_id, dl.level_name as level_name, dl.created_at 
@@ -184,7 +184,6 @@ class DBProvider:
                         WHERE dl.public = true AND dl.owner_id IS NOT Null;""")
                 row = cursor.fetchall()
                 colnames = [desc[0] for desc in cursor.description]
-                # print( rows_to_json_list(row, colnames))
             return rows_to_json_list(row, colnames)
         except Exception as e:
             self.connection.rollback()
@@ -195,13 +194,18 @@ class DBProvider:
             with self.connection.cursor() as cursor:
                 cursor.execute("""
                     INSERT INTO data.achieved_levels (user_id, level_id, score, level_setup)
-                    VALUES (%s, %s, %s, %s);
+                    VALUES (%s, %s, %s, %s)
+                    ON CONFLICT (user_id, level_id)
+                    DO UPDATE SET
+                        score = EXCLUDED.score,
+                        level_setup = EXCLUDED.level_setup;
                 """, (user_id, level_id, score, json.dumps(level_setup)))
             self.connection.commit()
             return True
         except Exception as e:
             self.connection.rollback()
             raise ValueError(f"❌ SQL error in save_achieved_level: {e}")
+
         
     def get_achieved_level(self, user_id, level_id):
         try:
@@ -271,7 +275,7 @@ class DBProvider:
         except Exception as e:
             self.connection.rollback()
             raise ValueError(f"❌ SQL error in increment_user_score: {e}")
-        
+
     def get_user_levels(self, user_id):
         try:
             with self.connection.cursor() as cursor:
@@ -284,3 +288,73 @@ class DBProvider:
         except Exception as e:
             self.connection.rollback()
             raise ValueError(f"❌ SQL error in get_user_levels: {e}")
+
+    def create_user_level(self, owner_id, extracted_data):
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    INSERT INTO data.levels (id, owner_id, level_number, level_name, task, public, setup)
+                    SELECT
+                        gen_random_uuid(), %s,
+                        COALESCE(MAX(level_number), -1) + 1,
+                        %s, %s, %s, %s
+                    FROM data.levels
+                    WHERE owner_id = %s
+                    RETURNING id;
+                """, 
+                (owner_id, 
+                extracted_data.get("level_name"), 
+                extracted_data.get("task"), 
+                extracted_data.get("public"), 
+                json.dumps(extracted_data.get("setup")),
+                owner_id))
+
+                level_id = cursor.fetchone()[0]  
+
+            self.connection.commit()
+            return level_id
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in create_user_level: {e}")
+        
+    def update_user_level(self, level_id, owner_id, extracted_data):
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE data.levels SET
+                        level_name = %s,
+                        task = %s,
+                        public = %s,
+                        setup = %s,
+                        person_image = %s,
+                        automat_image = %s,
+                        owner_id = %s
+                    WHERE id = %s;
+                """, (
+                    extracted_data.get("level_name"),
+                    extracted_data.get("task"),
+                    extracted_data.get("public"),
+                    json.dumps(extracted_data.get("setup")),
+                    extracted_data.get("person_image", "person1.png"),
+                    extracted_data.get("automat_image", "automat1.png"),
+                    owner_id,
+                    level_id
+                ))
+            self.connection.commit()
+            return True
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in update_user_level: {e}")
+        
+    def delete_user_level(self, level_id, user_id):
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    DELETE FROM data.levels
+                    WHERE id = %s AND owner_id = %s
+                """, (level_id, user_id))
+            self.connection.commit()
+            return cursor.rowcount > 0
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in delete_user_level: {e}")

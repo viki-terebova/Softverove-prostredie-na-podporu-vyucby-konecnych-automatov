@@ -4,4 +4,3 @@ flask-login
 psycopg2
 python-dotenv
 pyyaml
-automata-lib

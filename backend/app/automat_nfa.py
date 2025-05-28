@@ -1,70 +1,61 @@
-from automata.fa.nfa import NFA
 
-class AutomatNFA:
+from app.base_automat import BaseAutomat
+from collections import deque
+
+class AutomatNFA(BaseAutomat):
     def __init__(self, states, transitions_data, start_state, accept_states, setup):
-        self.states = set(states)
-        self.transitions_data = transitions_data
-        self.start_state = start_state
-        self.accept_states = set(accept_states)
-        self.setup = setup
+        super().__init__(states, transitions_data, start_state, accept_states, setup)
+        self.graph = self._build_graph()
 
-        self.money_to_letter = self._create_money_mapping()
-        self.letter_to_money = {value: key for key, value in self.money_to_letter.items()}
-
-        self.nfa = self._build_nfa()
-
-    def _create_money_mapping(self):
-        alphabet = self.setup["alphabet"]
-        mapping = {}
-        for i, value in enumerate(alphabet):
-            mapping[value] = chr(ord('a') + i)
-        return mapping
-
-    def _build_nfa(self):
-        transition_function = {}
-
-        has_transition_from_start = False
-
+    def _build_graph(self):
+        graph = {}
         for t in self.transitions_data:
-            from_state = t["from"]
-            to_state = t["to"]
-            value = float(t["value"])
+            f, t_, v = t["from"], t["to"], float(t["value"])
+            graph.setdefault(f, {}).setdefault(v, []).append(t_)
+        return graph
+    
+    def __repr__(self):
+        return super().__repr__()
 
-            letter = self.money_to_letter.get(value)
-            if not letter:
-                raise Exception(f"Value {value} not found in level alphabet.")
+    def accepts(self, sequence):
+        queue = deque([(self.start_state, 0)])
+        while queue:
+            state, index = queue.popleft()
+            if index == len(sequence):
+                if state in self.accept_states:
+                    return True
+                continue
+            coin = sequence[index]
+            for next_state in self.graph.get(state, {}).get(coin, []):
+                queue.append((next_state, index + 1))
+        return False
 
-            if from_state not in transition_function:
-                transition_function[from_state] = {}
+    def ends_in_reject(self, sequence):
+        queue = deque([(self.start_state, 0)])
+        while queue:
+            state, index = queue.popleft()
+            if index == len(sequence):
+                if state == "Reject":
+                    return True
+                continue
+            coin = sequence[index]
+            for next_state in self.graph.get(state, {}).get(coin, []):
+                queue.append((next_state, index + 1))
+        return False
 
-            if letter not in transition_function[from_state]:
-                transition_function[from_state][letter] = set()
+    def get_all_valid_paths(self, limit=10):
+        from collections import deque
+        results = []
+        queue = deque([(self.start_state, [], 0)])  # state, path, depth
 
-            transition_function[from_state][letter].add(to_state)
+        while queue:
+            state, path, depth = queue.popleft()
+            if depth >= limit:
+                continue
+            if state in self.accept_states and path:
+                results.append(path)
+            for value, next_states in self.graph.get(state, {}).items():
+                for next_state in next_states:
+                    queue.append((next_state, path + [value], depth + 1))
 
-            if from_state == self.start_state:
-                has_transition_from_start = True
-        
-        if not has_transition_from_start:
-            raise Exception(
-                f"The initial state '{self.start_state}' has no transitions defined. "
-                "Please create at least one transition from the start state."
-            )
-
-
-        return NFA(
-            states=self.states,
-            input_symbols=set(self.money_to_letter.values()),
-            transitions=transition_function,
-            initial_state=self.start_state,
-            final_states=self.accept_states
-        )
-
-    def get_nfa(self):
-        return self.nfa
-
-    def get_money_to_letter(self):
-        return self.money_to_letter
-
-    def get_letter_to_money(self):
-        return self.letter_to_money
+        return results

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Loading from "./Loading";
 import Button from "./Button";
 
-export default function LevelTable({ levels, loading, showEdit = false, onEditClick, showAdd = false, onAddClick }) {
+export default function LevelTable({ levels, loading, showEdit = false, onEditClick, showAdd = false, onAddClick, onDeleteClick }) {
     const navigate = useNavigate();
 
     // Sorting state
@@ -110,9 +110,10 @@ export default function LevelTable({ levels, loading, showEdit = false, onEditCl
                                     })}
                                 </td>
                                 {showEdit && (
-                                    <td>
-                                        <Button text="Edit" onClick={() => onEditClick(level.id)} />
-                                    </td>
+                                    <div className="level-action-buttons">
+                                        <button className="form-button small" onClick={() => onEditClick(level.id)}>Edit</button>
+                                        <button className="form-button small delete" onClick={() => onDeleteClick(level.id)}>Delete</button>
+                                    </div>
                                 )}
                             </tr>
                         ))}

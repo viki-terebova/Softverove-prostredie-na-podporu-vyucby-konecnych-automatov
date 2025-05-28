@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import './../style.css';
 
 import Menu from "../components/Menu";
@@ -10,6 +10,7 @@ export default function PublicLevelsPage() {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [filters, setFilters] = useState({ username: "", level_name: "", created_at: "" });
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
 
   const navigate = useNavigate();
 
@@ -56,6 +57,8 @@ export default function PublicLevelsPage() {
         <div className="public-levels-table-wrapper">
         {loading ? (
           <Loading message="Loading public levels..." />
+        ) : levels.length === 0 ? (
+          <p className="no-levels-message">No public levels found.<br/><br/>If you created level make it public for others to see.</p>
         ) : (
           <table className="public-levels-table">
             <thead>
@@ -80,7 +83,7 @@ export default function PublicLevelsPage() {
               {sortedLevels.map((level, index) => (
                 <tr 
                   key={index}
-                  onClick={() => navigate(`/level/${level.id}`)}
+                  onClick={() => navigate(`/level/${level.level_id}`, { state: { from: location.pathname } })}
                 >
                   <td>{level.level_name}</td>
                   <td>{level.username}</td>

@@ -6,9 +6,11 @@ from flask_login import login_user, logout_user, login_required, current_user
 from authentication.models import User
 from authentication import auth
 from database.exceptions import UserAlreadyExists, RegistrationFailed
+from app.additional_functions import extract_level_data
 
 from app.automat_nfa import AutomatNFA
-from app.validator_nfa import ValidatorNFA
+from app.automat_dfa import AutomatDFA
+from app.base_validator import BaseValidator
 
 # for recognizing the db package
 from database.db_provider import DBProvider
@@ -97,7 +99,7 @@ def protected():
 def load_user(user_id):
     user = database.get_user_by_id(user_id)
     if user:
-        return User(user.get("id"), user.get("username"), user.get("mail"), user.get("user_password"))
+        return User(user.get("id"), user.get("username"), user.get("mail"), user.get("user_password"), user.get("user_role"))
     return None
 
 
@@ -130,7 +132,10 @@ def get_categories():
         elif passed_found == category["category_order"]:
             status = "in_progress"
         else:
-            status = "locked"
+            if current_user.user_role in ["admin", "lector"]:
+                status = "in_progress"
+            else:
+                status = "locked"
 
         category_with_status = {**category, "status": status}
         status_categories.append(category_with_status)
@@ -148,7 +153,7 @@ def get_category_levels(category_uuid):
     achieved_dict = {level["level_id"]: level for level in achieved_levels}
 
     status_levels = []
-    passed_found = 0
+    passed_found = 1
     for level in sorted(levels, key=lambda l: l["level_number"]):
         level_id = level["id"]
         if level_id in achieved_dict:
@@ -157,7 +162,10 @@ def get_category_levels(category_uuid):
         elif passed_found == level["level_number"]:
             status = "in_progress"
         else:
-            status = "locked"
+            if current_user.user_role in ["admin", "lector"]:
+                status = "in_progress"
+            else:
+                status = "locked"
 
         level_with_status = {**level, "status": status}
         status_levels.append(level_with_status)
@@ -191,13 +199,16 @@ def get_public_levels_from_db():
 @login_required
 def change_password():
     data = request.get_json()
-    old_pw = data.get("old_password")
-    new_pw = data.get("new_password")
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
 
-    if not database.verify_password(current_user.id, old_pw):
+    if not old_password or not new_password:
+        return jsonify({"error": "You need to fill both windows."}), 400
+
+    if not database.verify_password(current_user.id, old_password):
         return jsonify({"error": "Incorrect old password."}), 400
 
-    database.update_password(current_user.id, new_pw)
+    database.update_password(current_user.id, new_password)
     return jsonify({"message": "Password changed successfully."}), 200
 
 @app.route("/api/v1/update_account", methods=["POST"])
@@ -206,7 +217,9 @@ def update_account():
     data = request.get_json()
     username = data.get("username")
     if username:
-        database.update_username(current_user.id, username)
+        result = database.update_username(current_user.id, username)
+        if result.get("error"):
+            return jsonify({"error": result["error"]}), 400
         return jsonify({"message": "Username updated."}), 200
     return jsonify({"error": "Invalid data"}), 400
 
@@ -230,13 +243,13 @@ def test_automat():
     level_data = database.get_level_details(level_id)
     
     states = data.get("states")
-    transitions_data = data.get("transitions")
+    transitions_data = data.get("transitions", [])
     start_state = data.get("start_state")
     accept_states = data.get("accept_states")
     setup = level_data.get("setup")
+    automat_type = setup.get("type", "NFA").upper()
 
-    if not transitions_data:
-        return jsonify({"error": "Missing transitions data"}), 400
+
     if not states:
         return jsonify({"error": "Missing states data"}), 400
     if not start_state:
@@ -245,29 +258,34 @@ def test_automat():
         return jsonify({"error": "Missing accept states"}), 400
     if not setup:
         return jsonify({"error": "Missing setup data"}), 400
-
     try:
-        automat_nfa = AutomatNFA(states, transitions_data, start_state, accept_states, setup)
+        if automat_type == "DFA":
+            automat = AutomatDFA(states, transitions_data, start_state, accept_states, setup)
+        elif automat_type == "NFA":
+            automat = AutomatNFA(states, transitions_data, start_state, accept_states, setup)
+        else:
+            return jsonify({"error": f"Unsupported automat type: {automat_type}"}), 400
+
+        validator = BaseValidator(automat, setup)
+
+        result = validator.run()
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
-    validator = ValidatorNFA(automat_nfa, setup)
-    result = validator.run()
-
-    if result["accepted"]:
-        score = 5
+    if result.get("accepted"):
+        score = 5 
+        if not database.get_achieved_level(current_user.id, level_id):
+            database.increment_user_score(user_id=current_user.id, value=score)
         database.save_achieved_level(
             user_id=current_user.id,
             level_id=level_id,
             score=score,
             level_setup={
-                "states": states,
+                "states": states, 
                 "transitions": transitions_data
             }
         )
-        database.increment_user_score(user_id=current_user.id, score=score)
 
-    print(result)
     return jsonify(result)
 
 @app.route("/api/v1/achieved_level", methods=["GET"])
@@ -276,10 +294,11 @@ def get_achieved_level():
     level_id = request.args.get("level_id")
     user_id = current_user.id
 
-    result = database.get_achieved_level(level_id, user_id)
+    result = database.get_achieved_level(user_id, level_id)
     if result is None:
         return jsonify({"exists": False})
 
+    print(result["level_setup"])
     return jsonify({
         "exists": True,
         "states": result["level_setup"]["states"],
@@ -299,6 +318,56 @@ def get_user_levels():
 
 
 
+@app.route("/api/v1/save_level", methods=["POST"])
+@login_required
+def save_level():
+    data = request.get_json()
+    extracted_data = extract_level_data(data)
+    if "error" in extracted_data:
+        return jsonify({"error": extracted_data["error"]}), 400
+
+    level_id = database.create_user_level(owner_id=current_user.id, extracted_data=extracted_data)
+
+    return jsonify({"message": "Level created successfully!", "level_id": level_id}), 200
+
+
+@app.route("/api/v1/update_level", methods=["POST"])
+@login_required
+def update_level():
+    level_id = request.args.get("level_id")
+    data = request.get_json()
+    extracted_data = extract_level_data(data)
+    if "error" in extracted_data:
+        return jsonify({"error": extracted_data["error"]}), 400
+    print(extracted_data)
+
+    success = database.update_user_level(
+        level_id=level_id,
+        owner_id=current_user.id,
+        extracted_data=extracted_data,
+    )
+
+    if not success:
+        return jsonify({"error": "Level not found or you do not have permission."}), 404
+
+    return jsonify({"message": "Level updated successfully!"}), 200
+
+@app.route("/api/v1/delete_level", methods=["DELETE"])
+@login_required
+def delete_level():
+    level_id = request.args.get("level_id")
+
+    if not level_id:
+        return jsonify({"error": "Missing level_id"}), 400
+
+    success = database.delete_user_level(level_id=level_id, user_id=current_user.id)
+
+    if success:
+        return jsonify({"message": "Level deleted successfully."}), 200
+    else:
+        return jsonify({"error": "Level not found or permission denied."}), 404
+
+
 # {'states': ['Start', 'Accept', 'q3', 'q4', 'q5', 'q7', 'q8'], 
 #  'start_state': 'Start', 
 #  'accept_states': ['Accept'], 
@@ -316,24 +385,14 @@ def get_user_levels():
 #   'setup': {
         # "alphabet": [0.1],
         # "accepted_values": [0.1],
-        # "accept_all": true,
+        # "accept_all_values": true,
         # "alphabet_count": {},
         # "forbidden_values": [],
         # "sequences": [],
-        # "max_states": ,
-        # }
+        # "accept_all_sequences": false,
+        # "max_input_length": ,
+        # "type": "NFA"
+        # },
+#  'person_image': 'person1.png',
+#  'automat_image': 'automat1.png',
 # }
-
-# Okay, I have a thought, I would like to do the validation in this way:
-# the level will have stored, alphabet - money values,
-# accepted_values = [], 
-# sequences - sub-path of the automat,
-# accept_all - boolean value - if the user needs to build automat for all combinations or just one is enough,
-# alphabet_count = dict() - will have values count for how many of each coin the person has and can use,
-# the validation process would begin with finding all of combinations for the alphabet money for the automat, if accept_all = true, 
-# the user needs to build automat where all cases are accepted, if accept_all = false, he needs to build automat with at least one accepted combination, 
-# if there are any sequences, the user needs to build automat whith this sequence, we need to find all combinations that are accepted which 
-# is when the sum of the values is in accepted values
-# can you make the structure better and then we would build the validator? would it be possible to use automata-lib for validation 
-# when we would asign for each value in alphabet some character and then use them instead of the numbers in combinations in input?
-

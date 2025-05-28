@@ -13,9 +13,9 @@ import PublicLevelsPage from "./pages/PublicLevels";
 import AccountPage from "./pages/Account";
 import UserLevelsPage from "./pages/UserLevels";
 import LevelEditorPage from "./pages/LevelEditor";
+import AboutPage from "./pages/About";
 
 import AuthRequired from "./components/AuthRequired";
-import Loading from "./components/Loading";
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -48,6 +48,8 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<AuthenticationPage setCurrentUser={setCurrentUser} />} />
+        <Route path="/level_editor/:levelId" element={<LevelEditorPage />} />
+        <Route path="/about" element={<AboutPage />} />
 
         {/* AuthRequired */}
         <Route element={<AuthRequired currentUser={currentUser} checkingAuth={checkingAuth} />}>
@@ -58,7 +60,6 @@ function App() {
           <Route path="/public_levels" element={<PublicLevelsPage />} />
           <Route path="/account" element={<AccountPage />} />
           <Route path="/user_levels" element={<UserLevelsPage />} />
-          <Route path="/level_editor/:levelId" element={<LevelEditorPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -2,9 +2,9 @@ import React from "react";
 import { Group, Circle, Text } from "react-konva";
 
 const StateNode = ({ id, x, y, isInitial, isAccepting, onClick, onDragMove, selected, deleteMode }) => {
-    const fillColor = isAccepting ? "#72d7ff" : (isInitial ? "#85ff85" : "white");
+    const fillColor = isAccepting ? "#72d7ff" : (isInitial ? "#85ff85" : (id === "Reject" ? "#ff4444" : "white"));
     const strokeStyle = isInitial ? "#008f07" : "black";
-    const isProtectedState = id === "Start" || id === "Accept";
+    const isProtectedState = ["Start", "Accept", "Reject"].includes(id);
 
     return (
         <Group

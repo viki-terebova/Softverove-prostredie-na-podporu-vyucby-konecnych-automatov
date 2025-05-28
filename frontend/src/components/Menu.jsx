@@ -2,13 +2,16 @@ import {React, useState, useEffect} from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar, Dropdown, Container } from "react-bootstrap";
 import "./Menu.css";
+import Loading from "./Loading";
 
 export default function Menu() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   const [score, setScore] = useState(0);
 
   useEffect(() => {
+    setLoading(true);
     fetch("/api/v1/get_user_score")
       .then(res => res.json())
       .then(data => {
@@ -16,11 +19,15 @@ export default function Menu() {
           setScore(data.score);
         }
       })
-      .catch(err => console.error("Failed to load score:", err));
+      .catch(err => console.error("Failed to load score:", err))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
     <Navbar fixed="top" bg="dark" variant="dark" className="fini-navbar">
+      {loading && (
+          <Loading message="Loading Menu..." />
+      )}
       <Container fluid className="d-flex gap-1 justify-content-between align-items-center">
         {/* <img src="/images/logo.png" alt="Logo" className="navbar-logo" /> */}
         <div className="d-flex gap-1">
@@ -40,6 +47,7 @@ export default function Menu() {
             <Dropdown.Item
               as="button"
               onClick={async () => {
+                setLoading(true);
                 const res = await fetch("/api/v1/logout", {
                   method: "GET",
                   credentials: "include",
@@ -50,6 +58,7 @@ export default function Menu() {
                 } else {
                   alert("Logout failed.");
                 }
+                setLoading(false);
               }}
             >
               ➡️ Log out
@@ -69,6 +78,10 @@ export default function Menu() {
             <Dropdown.Item as="button">🇸🇰 Slovak</Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
+        
+          <button variant="outline-light" size="sm" onClick={() => navigate(-1)} className="navbar-icon-button">
+          ↶
+          </button>
         </div>
         <div className="navbar-score">
           <span>⭐ {score}</span>

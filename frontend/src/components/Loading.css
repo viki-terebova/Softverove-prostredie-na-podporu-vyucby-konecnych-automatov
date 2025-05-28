@@ -5,3 +5,8 @@
     transform: translate(-50%, -50%);
     z-index: 9999;
 }
+
+.custom-spinner {
+    color: #008f07;
+    border-width: 0.2rem;
+}

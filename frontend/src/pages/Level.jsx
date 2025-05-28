@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Menu from "../components/Menu";
 import Button from "../components/Button";
 import Loading from "../components/Loading";
@@ -8,11 +8,22 @@ import "./../style.css";
 
 const LevelPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { levelId } = useParams();
 
   const [level, setLevel] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const page_from = location.state?.from || localStorage.getItem('page_from') || `/categories`;
+
+  const personImage = level?.person_image ? `/images/persons/${level.person_image}` : "/images/persons/person1.png";
+  const automatImage = level?.automat_image ? `/images/automats/${level.automat_image}` : "/images/automats/automat1.png";
+  const characterText = level?.task || "⚠️ Could not load level data.";
+
+  const handleEdit = () => {
+    localStorage.setItem('page_from', page_from);
+    navigate(`/editor/${levelId}`);
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -32,9 +43,11 @@ const LevelPage = () => {
       .finally(() => setLoading(false));
   }, [levelId]);
 
-  const personImage = level?.character_image || "/images/persons/person8.png";
-  const automatImage = level?.automat_image || "/images/automats/automat10.png";
-  const characterText = level?.task || "⚠️ Could not load level data.";
+  useEffect(() => {
+    if (location.state?.from) {
+      localStorage.setItem('page_from', location.state.from);
+    }
+  }, [location.state]);
 
   return (
     <div className="start-page level-page">
@@ -49,7 +62,7 @@ const LevelPage = () => {
           <>
             <div className="level-box">
               <div className="level-person">
-              <h1 className="title2">Level: {level.level_name || level.level_number}</h1>
+              <h1 className="title2">{level.level_name || level.level_number}</h1>
                 <img src={personImage} alt="Character" className="character-image" />
                 <div className="character-speech">
                   <p>{formatBold(characterText)}</p>
@@ -64,7 +77,7 @@ const LevelPage = () => {
             </div>
 
             <div className="repair-button-area">
-              <Button text="🛠 Repair" onClick={() => navigate(`/editor/${levelId}`)} />
+              <Button text="🛠 Repair" onClick={handleEdit} />
             </div>
           </>
         )}

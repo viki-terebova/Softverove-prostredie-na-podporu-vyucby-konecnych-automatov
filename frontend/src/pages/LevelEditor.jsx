@@ -80,14 +80,18 @@ export default function LevelEditorPage() {
                 console.log("Fetched level data:", data);
                 setLevelName(data.level_name || "");
                 setTask(data.task || "");
-        
+                console.log("Setup data:", data.setup);
                 const setup = data.setup || {};
                 setTransitionValues(setup.transition_values || []);
                 setAcceptedValues(setup.accepted_values || []);
-                setAcceptAll(setup.accept_all_values || false);
+                setAcceptAll(setup.accept_all || false);
                 setSequences(setup.sequences || []);
                 setIsPublic(data.public || false);
                 setMaxInputLength(setup.max_input_length || "");
+                setType(setup.type || "NFA");
+                setAlphabetCount(Object.entries(setup.alphabet_count || {}).map(([value, count]) => ({ value: parseFloat(value), count })));
+                setForbiddenValues(setup.forbidden_values || []);
+                setAcceptAllSequences(setup.accept_all_sequences || false);
             })
             .catch(err => {
                 console.error("Failed to load level data:", err);
@@ -121,6 +125,11 @@ export default function LevelEditorPage() {
             return;
         }
 
+        const alphabetCountObject = {};
+        alphabetCount.forEach(item => {
+            alphabetCountObject[item.value] = item.count;
+        });
+
         const levelData = {
             level_name: levelName,
             task,
@@ -128,10 +137,13 @@ export default function LevelEditorPage() {
             setup: {
                 transition_values,
                 accepted_values: acceptedValues,
-                accept_all_values: acceptAll,
+                accept_all: acceptAll,
                 sequences,
                 max_input_length: maxInputLength,
-                type: "NFA"
+                type,
+                alphabet_count: alphabetCountObject,
+                forbidden_values: forbiddenValues,
+                accept_all_sequences: acceptAllSequences
             }
         };
     
@@ -208,8 +220,8 @@ export default function LevelEditorPage() {
 
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "300px" }}>
-                        Transition values (coin values):
-                        <button type="button" className="info-button" onClick={() => showInfo("Monetary values available for transitions.")}>ℹ️</button>
+                        Coin values for transitions (€):
+                        <button type="button" className="info-button" onClick={() => showInfo("Coin values available for creating transitions.")}>ℹ️</button>
                     </label>
                     <div className="d-flex w-100">
                         <input value={newTransitionValues} onChange={(e) => setNewTransitionValues(e.target.value)} className="form-input flex-grow-1" />
@@ -269,9 +281,9 @@ export default function LevelEditorPage() {
                 </ul>
 
                 <div className="form-group d-flex align-items-center">
-                    <label className="form-label" style={{ minWidth: "320px" }}>
-                        Accept All Combinations:
-                        <button type="button" className="info-button" onClick={() => showInfo("Should the automat accept ALL valid combinations or just one?")}>ℹ️</button>
+                    <label className="form-label" style={{ minWidth: "270px" }}>
+                        Accept ALL values:
+                        <button type="button" className="info-button" onClick={() => showInfo("Should the automat accept ALL values from accepted values list or at least one?")}>ℹ️</button>
                     </label>
                     <input type="checkbox" checked={acceptAll} onChange={() => setAcceptAll(!acceptAll)} />
                 </div>
@@ -319,7 +331,7 @@ export default function LevelEditorPage() {
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "320px" }}>
                         Accept All Sequences:
-                        <button type="button" className="info-button" onClick={() => showInfo("Should the automaton accept all defined sequences?")}>ℹ️</button>
+                        <button type="button" className="info-button" onClick={() => showInfo("Should the automat accept all defined sequences?")}>ℹ️</button>
                     </label>
                     <input type="checkbox" checked={acceptAllSequences} onChange={() => setAcceptAllSequences(!acceptAllSequences)} />
                 </div>
@@ -334,7 +346,7 @@ export default function LevelEditorPage() {
 
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "240px" }}>
-                        Automaton Type:
+                        Automat Type:
                         <button type="button" className="info-button" onClick={() => showInfo("Choose between NFA or DFA.")}>ℹ️</button>
                     </label>
                     <select value={type} onChange={(e) => setType(e.target.value)} className="form-input">

@@ -34,9 +34,9 @@ def extract_level_data(data):
             "alphabet_count": setup["alphabet_count"],
         }
 
-        optional_fields = ["accept_all_values", "forbidden_values", "sequences", "accept_all_sequences", "max_input_length", "type", "alphabet_count"]
+        optional_fields = ["accept_all", "forbidden_values", "sequences", "accept_all_sequences", "max_input_length", "type", "alphabet_count"]
         for field in optional_fields:
-            if field in setup and not setup[field]:
+            if field in setup:
                 final_setup[field] = setup[field]
 
         extracted_data = {

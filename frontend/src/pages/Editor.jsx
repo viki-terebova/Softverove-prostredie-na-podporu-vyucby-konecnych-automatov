@@ -8,6 +8,7 @@ import StateNode from "../components/StateNode";
 import TransitionArrow from "../components/TransitionArrow";
 import { formatBold } from "../utils/formatText";
 import Loading from "../components/Loading";
+import TutorialBubble from "../components/TutorialBubble";
 
 const EditorPage = () => {
   const { levelId: paramLevelId } = useParams();
@@ -82,7 +83,6 @@ const EditorPage = () => {
     ];
   });
 
-  
   const handleStateClick = (stateId) => {
     if (deleteStateMode) {
       if (stateId === "Start" || stateId === "Accept" || stateId === "Reject") {
@@ -174,18 +174,32 @@ const EditorPage = () => {
     setSelectedCoins(prev => ({ ...prev, [value]: !prev[value] }));
   };
 
-  const handleSelectValue = (value) => {
-    if (!value || !pendingTransition) return;
-  
-    const newTransition = {
-      from: pendingTransition.from,
-      to: pendingTransition.to,
-      value: parseFloat(value).toFixed(2)
-    };
-  
-    setTransitions(prev => [...prev, newTransition]);
-    setPendingTransition(null); 
+
+  const [tutorialStep, setTutorialStep] = useState(0);
+  const [tutorialVisible, setTutorialVisible] = useState(false);
+
+  const tutorialSteps = {
+    0: {
+      1: [
+        { text: "🟢 This is the Start state. The automat always begins here.", position: { top: "20vh", left: "12vw" } },
+        { text: "🔵 This is the Accept state. Reach this state with valid coins to succeed.", position: { top: "4vh", left: "72vw" } },
+        { text: "🔴 This is the Reject state. The paths that are connected to this state will be rejected by the automat.", position: { top: "25vh", left: "72vw" } },
+        { text: "+↗: If you want to add transition, this button needs to be selected.", position: { top: "58vh", left: "19vw" } },
+        { text: "💡 To create a transition, click one state, then another, and select the coin values. ", position: { top: "25vh", left: "42vw" } },
+        { text: "💰 For example, use a 0.1€ coin to connect Start and Accept. That means when the automat gets 0.1€ coin in Start state it will move to Accept state.", position: { top: "20vh", left: "42vw" } },
+        { text: "🧪 Press Test to check your automat!", position: { top: "65vh", left: "80vw" } }
+      ],
+      2: [
+        { text: "x↗: If you want to delete transition select this button and click on transition you want to delete.", position: {  top: "50vh", left: "23vw"  } }
+      ],
+      3: [
+        { text: "+○: To add state click this button. The state will appear in the editor. The state will be your checkpoint to remember the values you will connect to it.", position: {top: "42vh", left: "7vw" } },
+        { text: "💡 Use 10 and 20 cent coins to reach exactly 20 cents.", position: { top: "25vh", left: "35vw" } },
+        { text: "+○: If you want to delete state click this button and select state you want to delete.", position: { top: "54vh", left: "12vw" } }
+      ]
+    }
   };
+
 
   const handleTest = async () => {
     const automatData = {
@@ -253,6 +267,15 @@ const EditorPage = () => {
     }
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    console.log("Level loaded:", level);
+    if (level?.category_number === 0 && tutorialSteps[0]?.[level.level_number]) {
+      console.log("Starting tutorial for Level Number:", level.level_number);
+      setTutorialVisible(true);
+      setTutorialStep(0);
+    }
+  }, [level]);
   
   useEffect(() => {
     if (!levelId) return;
@@ -379,6 +402,20 @@ const EditorPage = () => {
           </div>
         </div>
       )}
+      {console.log("Tutorial Step:", tutorialStep, "Visible:", tutorialVisible, "Level Number:", level?.level_number)}
+      {tutorialVisible && tutorialSteps[0]?.[level?.level_number] && (
+        <TutorialBubble
+          text={tutorialSteps[0][level.level_number][tutorialStep].text}
+          position={tutorialSteps[0][level.level_number][tutorialStep].position}
+          onNext={() => {
+            if (tutorialStep + 1 < tutorialSteps[0][level.level_number].length) {
+              setTutorialStep(tutorialStep + 1);
+            } else {
+              setTutorialVisible(false);
+            }
+          }}
+        />
+      )}
 
       {showHint && level && (
         <div className="speech-bubble hint-bubble">
@@ -405,7 +442,11 @@ const EditorPage = () => {
             <br /><br />
 
             <strong>🫧 Automat type:</strong><br />
-            {level.setup.type || "-"}
+            {level.setup.type === 'NFA'
+              ? "NFA - Nondeterministic Finite Automat: can have multiple possible paths for one coin value. It can move to several states at the same time."
+              : level.setup.type === 'DFA'
+                ? "DFA - Deterministic Finite Automat: for each state and coin value, there is only one possible next state. The path is unique and clear."
+                : "-"}
             <br /><br />
 
             <button onClick={() => setShowHint(false)}>✖ Close</button>

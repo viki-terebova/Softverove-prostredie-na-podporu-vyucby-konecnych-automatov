@@ -8,12 +8,20 @@ class Settings:
         self.config = self.load_config()
 
     def load_config(self):
-        config_path = os.path.join(os.path.dirname(__file__), "../../config.yml")
+        flask_env = os.getenv("FLASK_ENV", "development")
+
+        if flask_env == "production":
+            config_filename = "config.prod.yml"
+        else:
+            config_filename = "config.yml"
+
+        config_path = os.path.join(os.path.dirname(__file__), f"../../{config_filename}")
+        
         if os.path.exists(config_path):
             with open(config_path, "r") as config_file:
                 return yaml.safe_load(config_file)
         else:
-            raise FileNotFoundError("❌ config.yml not found!")
+            raise FileNotFoundError(f"❌ {config_filename} not found!")
 
     def get_conf(self, key_path, default=None):
         keys = key_path.split(".")

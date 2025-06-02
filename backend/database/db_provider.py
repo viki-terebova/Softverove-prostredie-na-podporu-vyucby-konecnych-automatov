@@ -140,6 +140,17 @@ class DBProvider:
         except Exception as e:
             self.connection.rollback()
             raise ValueError(f"❌ SQL error in get_categories: {e}")
+        
+    def get_category_by_id(self, category_id):
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute("""SELECT * FROM data.categories WHERE id = %s;""", (category_id,))
+                row = cursor.fetchone()
+                colnames = [desc[0] for desc in cursor.description]
+            return rows_to_json_list([row], colnames)[0] if row else None
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in get_category_by_id: {e}")
 
     def get_levels_for_category(self, category_uuid=None, user_id=None):
         try:

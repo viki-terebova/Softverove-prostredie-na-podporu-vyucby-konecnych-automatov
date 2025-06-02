@@ -11,7 +11,7 @@ function AuthenticationPage({ setCurrentUser }) {
     const [activeTab, setActiveTab] = useState("login");
     const [loginData, setLoginData] = useState({ username_or_mail: "", password: "" });
     const [registerData, setRegisterData] = useState({ username: "", mail: "", password: "", password_repeat: "" });
-    const [showPassword, setShowPassword] = useState(true);
+    const [showPassword, setShowPassword] = useState(false);
     const [message, setMessage] = useState(location.state?.message || "");
     const [loading, setLoading] = useState(true);
 
@@ -85,7 +85,6 @@ function AuthenticationPage({ setCurrentUser }) {
             const result = await res.json();
     
             if (res.ok) {
-                // 🔥 Auto-login
                 const loginRes = await fetch("api/v1/login", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },

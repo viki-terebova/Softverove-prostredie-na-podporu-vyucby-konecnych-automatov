@@ -1,15 +1,15 @@
 app:
-  flask_env: "development"
-  flask_app: "app"
+  flask_env: "production"
+  flask_app: "backend/wsgi.py"
   rebuild_app: true
-  debug: true
+  debug: false
 database:
   type: "postgresql"
   host: "localhost"
   port: 5432
   user: "postgres"
   password: ${DB_PASSWORD}
-  db_name: "finiautoma_dev"
+  db_name: "finiautoma_prod"
   schema: "data"
 default:
   user_id: 0

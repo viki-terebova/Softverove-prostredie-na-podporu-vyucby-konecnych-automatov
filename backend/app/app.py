@@ -184,6 +184,11 @@ def get_level_by_uuid():
     if level_data is None:
         return jsonify({"error": "Level not found"}), 404
 
+    category_data = database.get_category_by_id(level_data["category_id"])
+    if category_data:
+        level_data["category_number"] = category_data["category_order"]
+
+
     return jsonify(level_data)
 
 @app.route("/api/v1/get_public_levels", methods=["GET"])
@@ -385,7 +390,7 @@ def delete_level():
 #   'setup': {
         # "alphabet": [0.1],
         # "accepted_values": [0.1],
-        # "accept_all_values": true,
+        # "accept_all": true,
         # "alphabet_count": {},
         # "forbidden_values": [],
         # "sequences": [],

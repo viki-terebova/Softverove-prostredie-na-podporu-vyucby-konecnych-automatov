@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import "./../style.css";
 import Menu from "../components/Menu";
 import Loading from "../components/Loading";
+import infoMessages from "../utils/infoMessages";
 
 export default function LevelEditorPage() {
     const navigate = useNavigate();
@@ -38,33 +39,151 @@ export default function LevelEditorPage() {
     };
 
     const addTransitionValues = () => {
-        if (newTransitionValues) {
-            setTransitionValues([...transition_values, parseFloat(newTransitionValues)]);
-            setNewTransitionValues("");
+        const raw = newTransitionValues.trim();
+        const v = parseFloat(raw);
+
+        if (!raw || !isFinite(v) || v <= 0) {
+            setMessage("Transition value must be a positive number.");
+            return;
         }
-    };
+
+        const filtered = transition_values.filter(val => val !== v);
+        setTransitionValues([...filtered, v]);
+
+        setNewTransitionValues("");
+        setMessage("");
+        };
 
     const removeTransitionValues = (index) => {
         setTransitionValues(transition_values.filter((_, i) => i !== index));
     };
 
     const addAcceptedValue = () => {
-        if (newAcceptedValue) {
-            setAcceptedValues([...acceptedValues, parseFloat(newAcceptedValue)]);
-            setNewAcceptedValue("");
+    const raw = newAcceptedValue.trim();
+    if (!raw) return;
+
+    try {
+        if (raw.startsWith("{")) {
+        const obj = JSON.parse(raw);
+
+        const validKeys = [
+            "ends_with",
+            "starts_with",
+            "alternating",
+            "repeat",
+            "start_from_each"
+        ];
+
+        const keys = Object.keys(obj);
+
+        if (keys.length !== 1 || !validKeys.includes(keys[0])) {
+            throw new Error("Invalid rule type.");
         }
+
+        const value = obj[keys[0]];
+
+        switch (keys[0]) {
+            case "ends_with":
+            case "starts_with":
+            if (typeof value !== "number") throw new Error("Value must be a number.");
+            break;
+            case "alternating":
+            if (!Array.isArray(value) || value.some(v => typeof v !== "number")) {
+                throw new Error("Alternating must be an array of numbers.");
+            }
+            break;
+            case "repeat":
+            if (
+                !Array.isArray(value) ||
+                value.length !== 2 ||
+                typeof value[0] !== "number" ||
+                typeof value[1] !== "number"
+            ) {
+                throw new Error("Repeat must be [number, count].");
+            }
+            break;
+            case "start_from_each":
+            if (
+                !Array.isArray(value) ||
+                value.some(seq => !Array.isArray(seq) || seq.some(v => typeof v !== "number"))
+            ) {
+                throw new Error("Each pattern must be an array of numbers.");
+            }
+            break;
+        }
+
+        setAcceptedValues([obj]);
+        } else {
+        const values = raw
+            .split(",")
+            .map(v => parseFloat(v.trim()))
+            .filter(v => !isNaN(v));
+
+        if (values.length === 0) {
+            throw new Error("No valid numeric values provided.");
+        }
+
+        const prev = acceptedValues.filter(v => typeof v === "number");
+        const merged = Array.from(new Set([...prev, ...values]));
+
+        setAcceptedValues(merged);
+        }
+
+        setNewAcceptedValue("");
+        setMessage("");
+    } catch (err) {
+        setMessage("❌ " + err.message);
+    }
     };
 
-    const removeAcceptedValue = (index) => {
-        setAcceptedValues(acceptedValues.filter((_, i) => i !== index));
+    const addWalletValue = () => {
+        const coinValue = parseFloat(newAlphabetValue.trim());
+        const coinCount = parseInt(newAlphabetCount.trim());
+
+        if (!isFinite(coinValue) || coinValue <= 0) {
+            setMessage("Coin value must be a positive number.");
+            return;
+        }
+        if (!Number.isInteger(coinCount) || coinCount <= 0) {
+            setMessage("Coin count must be a positive integer.");
+            return;
+        }
+
+        const withoutOldValue = alphabetCount.filter(entry => entry.value !== coinValue);
+        const updated = [...withoutOldValue, { value: coinValue, count: coinCount }];
+
+        setAlphabetCount([...updated]);
+        setNewAlphabetValue("");
+        setNewAlphabetCount("");
+        setMessage("");
     };
 
     const addSequence = () => {
-        if (newSequence) {
-            const sequenceList = newSequence.split(",").map(Number);
-            setSequences([...sequences, sequenceList]);
-            setNewSequence("");
+        if (!newSequence.trim()) return;
+        const rawParts = newSequence.split(",");
+        const sequenceList = [];
+
+        for (let part of rawParts) {
+            const num = parseFloat(part.trim());
+            if (!isFinite(num)) {
+                setMessage("All sequence values must be valid numbers.");
+                return;
+            }
+            sequenceList.push(num);
         }
+        const isDuplicate = sequences.some(seq =>
+            seq.length === sequenceList.length &&
+            seq.every((val, idx) => val === sequenceList[idx])
+        );
+
+        if (isDuplicate) {
+            setNewSequence("");
+            return;
+        }
+
+        setSequences([...sequences, sequenceList]);
+        setNewSequence("");
+        setMessage("");
     };
 
     const removeSequence = (index) => {
@@ -125,6 +244,24 @@ export default function LevelEditorPage() {
             return;
         }
 
+        let parsedAcceptedValues;
+
+        try {
+        if (newAcceptedValue.includes("{")) {
+            parsedAcceptedValues = JSON.parse(newAcceptedValue);
+        } else {
+            parsedAcceptedValues = newAcceptedValue
+            .split(",")
+            .map(v => parseFloat(v.trim()))
+            .filter(v => !isNaN(v));
+        }
+        } catch (e) {
+        setMessage("Invalid accepted values format. Check your JSON syntax.");
+        setLoading(false);
+        return;
+        }
+
+
         const alphabetCountObject = {};
         alphabetCount.forEach(item => {
             alphabetCountObject[item.value] = item.count;
@@ -136,7 +273,7 @@ export default function LevelEditorPage() {
             public: isPublic,
             setup: {
                 transition_values,
-                accepted_values: acceptedValues,
+                accepted_values: parsedAcceptedValues,
                 accept_all: acceptAll,
                 sequences,
                 max_input_length: maxInputLength,
@@ -190,7 +327,7 @@ export default function LevelEditorPage() {
             )}
             {infoMessage && (
                 <div className="info-banner">
-                    {infoMessage}
+                    <pre style={{ whiteSpace: "pre-wrap", maxHeight: "400px", overflowY: "auto", textAlign: "left" }}>{infoMessage}</pre>
                     <button className="auth-banner-close" onClick={() => setInfoMessage("")}>✖</button>
                 </div>
             )}
@@ -204,28 +341,48 @@ export default function LevelEditorPage() {
             <div className="form-container level-editor-form">
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "200px" }}>
-                        Level Name:
-                        <button type="button" className="info-button" onClick={() => showInfo("Name of the level (will be displayed in lists)")}>ℹ️</button>
+                        Level Name: <span style={{ color: "red" }}>*</span>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.levelName)}>ℹ️</button>
                     </label>
                     <input value={levelName} onChange={(e) => setLevelName(e.target.value)} className="form-input" />
                 </div>
 
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "200px" }}>
-                        Task:
-                        <button type="button" className="info-button" onClick={() => showInfo("Task description shown to the player. If you want to make text bold, put it inside ** ** (e.g. **70 cents**).")}>ℹ️</button>
+                        Task: <span style={{ color: "red" }}>*</span>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.task)}>ℹ️</button>
                     </label>
                     <input value={task} onChange={(e) => setTask(e.target.value)} className="form-input" />
                 </div>
 
+                
                 <div className="form-group d-flex align-items-center">
-                    <label className="form-label" style={{ minWidth: "300px" }}>
-                        Coin values for transitions (€):
-                        <button type="button" className="info-button" onClick={() => showInfo("Coin values available for creating transitions.")}>ℹ️</button>
+                    <label className="form-label" style={{ minWidth: "280px" }}>
+                        Accepted Values: <span style={{ color: "red" }}>*</span>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.acceptedValues)}>ℹ️</button>
                     </label>
                     <div className="d-flex w-100">
-                        <input value={newTransitionValues} onChange={(e) => setNewTransitionValues(e.target.value)} className="form-input flex-grow-1" />
-                        <button onClick={addTransitionValues} className="form-button small">Add</button>
+                        <input value={newAcceptedValue} placeholder="e.g. 0.2, 0.3" onChange={(e) => setNewAcceptedValue(e.target.value)} className="form-input flex-grow-1" />
+                        <button onClick={addAcceptedValue} className="form-button form-button-table small">Add</button>
+                    </div>
+                </div>
+                <ul>
+                    {acceptedValues.map((value, index) => (
+                        <li key={index}>
+                            {typeof value === "object" ? JSON.stringify(value) : value}
+                            <button onClick={() => removeAcceptedValue(index)} className="remove-button2">✖</button>
+                        </li>
+                    ))}
+                </ul>
+
+                <div className="form-group d-flex align-items-center">
+                    <label className="form-label" style={{ minWidth: "280px" }}>
+                        Coin values for transitions (€): <span style={{ color: "red" }}>*</span>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.transitionValues)}>ℹ️</button>
+                    </label>
+                    <div className="d-flex w-100">
+                        <input value={newTransitionValues} placeholder="0.2" onChange={(e) => setNewTransitionValues(e.target.value)} className="form-input flex-grow-1" />
+                        <button onClick={addTransitionValues} placeholder="e.q. 0.2" className="form-button form-button-table small">Add</button>
                     </div>
                 </div>
                 <ul>
@@ -238,18 +395,18 @@ export default function LevelEditorPage() {
                 </ul>
 
                 <div className="form-group d-flex align-items-center">
-                    <label className="form-label" style={{ minWidth: "300px" }}>
-                        Wallet (value → count):
-                        <button type="button" className="info-button" onClick={() => showInfo("Set how many times each value can be used in transitions.")}>ℹ️</button>
+                    <label className="form-label" style={{ minWidth: "280px" }}>
+                        Wallet (value → count): <span style={{ color: "red" }}>*</span>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.wallet)}>ℹ️</button>
                     </label>
                     <div className="d-flex w-100">
-                        <input value={newAlphabetValue} onChange={(e) => setNewAlphabetValue(e.target.value)} placeholder="Value" className="form-input flex-grow-1" />
-                        <input value={newAlphabetCount} onChange={(e) => setNewAlphabetCount(e.target.value)} placeholder="Count" className="form-input flex-grow-1" />
+                        <input value={newAlphabetValue} onChange={(e) => setNewAlphabetValue(e.target.value)} placeholder="Coin Value (e.g. 0.2)" className="form-input flex-grow-1" />
+                        <input value={newAlphabetCount} onChange={(e) => setNewAlphabetCount(e.target.value)} placeholder="Count (e.g. 1)" className="form-input flex-grow-1" />
                         <button onClick={() => {
-                            setAlphabetCount([...alphabetCount, { value: parseFloat(newAlphabetValue), count: parseInt(newAlphabetCount) }]);
+                            addWalletValue();
                             setNewAlphabetValue("");
                             setNewAlphabetCount("");
-                        }} className="form-button small">Add</button>
+                        }} className="form-button form-button-table small">Add</button>
                     </div>
                 </div>
                 <ul>
@@ -261,29 +418,11 @@ export default function LevelEditorPage() {
                     ))}
                 </ul>
 
-                <div className="form-group d-flex align-items-center">
-                    <label className="form-label" style={{ minWidth: "300px" }}>
-                        Accepted Values:
-                        <button type="button" className="info-button" onClick={() => showInfo("The target values the player needs to reach to accept")}>ℹ️</button>
-                    </label>
-                    <div className="d-flex w-100">
-                        <input value={newAcceptedValue} onChange={(e) => setNewAcceptedValue(e.target.value)} className="form-input flex-grow-1" />
-                        <button onClick={addAcceptedValue} className="form-button small">Add</button>
-                    </div>
-                </div>
-                <ul>
-                    {acceptedValues.map((value, index) => (
-                        <li key={index}>
-                            {value}
-                            <button onClick={() => removeAcceptedValue(index)} className="remove-button2">✖</button>
-                        </li>
-                    ))}
-                </ul>
 
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "270px" }}>
                         Accept ALL values:
-                        <button type="button" className="info-button" onClick={() => showInfo("Should the automat accept ALL values from accepted values list or at least one?")}>ℹ️</button>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.acceptAll)}>ℹ️</button>
                     </label>
                     <input type="checkbox" checked={acceptAll} onChange={() => setAcceptAll(!acceptAll)} />
                 </div>
@@ -291,14 +430,14 @@ export default function LevelEditorPage() {
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "240px" }}>
                         Forbidden Values:
-                        <button type="button" className="info-button" onClick={() => showInfo("Values that cannot be used in transitions.")}>ℹ️</button>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.forbiddenValues)}>ℹ️</button>
                     </label>
                     <div className="d-flex w-100">
-                        <input value={newForbiddenValue} onChange={(e) => setNewForbiddenValue(e.target.value)} className="form-input flex-grow-1" />
+                        <input value={newForbiddenValue} placeholder="e.g. 0.2" onChange={(e) => setNewForbiddenValue(e.target.value)} className="form-input flex-grow-1" />
                         <button onClick={() => {
                             setForbiddenValues([...forbiddenValues, parseFloat(newForbiddenValue)]);
                             setNewForbiddenValue("");
-                        }} className="form-button small">Add</button>
+                        }} className="form-button form-button-table small">Add</button>
                     </div>
                 </div>
                 <ul>
@@ -313,11 +452,11 @@ export default function LevelEditorPage() {
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "240px" }}>
                         Sequences:
-                        <button type="button" className="info-button" onClick={() => showInfo("Required sequences that must be accepted (format: 0.1,0.2)")}>ℹ️</button>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.sequences)}>ℹ️</button>
                     </label>
                     <div className="d-flex w-100">
-                        <input value={newSequence} onChange={(e) => setNewSequence(e.target.value)} className="form-input flex-grow-1" />
-                        <button onClick={addSequence} className="form-button small">Add</button>
+                        <input value={newSequence} placeholder="e.g. 0.1, 0.2, 0.5, 1" onChange={(e) => setNewSequence(e.target.value)} className="form-input flex-grow-1" />
+                        <button onClick={addSequence} className="form-button form-button-table small">Add</button>
                     </div>
                 </div>
                 <ul>
@@ -329,9 +468,9 @@ export default function LevelEditorPage() {
                     ))}
                 </ul>
                 <div className="form-group d-flex align-items-center">
-                    <label className="form-label" style={{ minWidth: "320px" }}>
+                    <label className="form-label" style={{ minWidth: "300px" }}>
                         Accept All Sequences:
-                        <button type="button" className="info-button" onClick={() => showInfo("Should the automat accept all defined sequences?")}>ℹ️</button>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.acceptAllSequences)}>ℹ️</button>
                     </label>
                     <input type="checkbox" checked={acceptAllSequences} onChange={() => setAcceptAllSequences(!acceptAllSequences)} />
                 </div>
@@ -339,15 +478,15 @@ export default function LevelEditorPage() {
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "240px" }}>
                         Max input length:
-                        <button type="button" className="info-button" onClick={() => showInfo("Limit on how long can one path be.")}>ℹ️</button>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.maxInputLength)}>ℹ️</button>
                     </label>
-                    <input type="number" value={maxInputLength} onChange={(e) => setMaxInputLength(parseInt(e.target.value))} className="form-input" />
+                    <input type="number" placeholder="e.g. 1" value={maxInputLength} onChange={(e) => setMaxInputLength(parseInt(e.target.value))} className="form-input" />
                 </div>
 
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "240px" }}>
                         Automat Type:
-                        <button type="button" className="info-button" onClick={() => showInfo("Choose between NFA or DFA.")}>ℹ️</button>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.type)}>ℹ️</button>
                     </label>
                     <select value={type} onChange={(e) => setType(e.target.value)} className="form-input">
                         <option value="NFA">NFA</option>
@@ -358,12 +497,12 @@ export default function LevelEditorPage() {
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "240px" }}>
                         Public Level:
-                        <button type="button" className="info-button" onClick={() => showInfo("Would you like the level to be seen by others?")}>ℹ️</button>
+                        <button type="button" className="info-button" onClick={() => showInfo(infoMessages.public)}>ℹ️</button>
                     </label>
                     <input type="checkbox" checked={isPublic} onChange={() => setIsPublic(!isPublic)} />
                 </div>
 
-                <button onClick={handleSave} className="form-button">Save Level</button>
+                <button onClick={handleSave} className="form-button form-button">Save Level</button>
             </div>
         </div>
     );

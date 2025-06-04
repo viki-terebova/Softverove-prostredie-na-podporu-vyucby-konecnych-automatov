@@ -4,7 +4,6 @@ __pycache__/
 node_modules/
 backend/__pycache__/
 backend/*.pyc
-/database
 frontend/build
 frontend2
 

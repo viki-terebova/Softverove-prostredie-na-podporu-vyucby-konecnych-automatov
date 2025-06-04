@@ -18,7 +18,7 @@ class BaseAutomat:
         return mapping
     
     def __repr__(self):
-        return f"BaseAutomat(states={self.states}, transitions_data={self.transitions_data}, start_state={self.start_state}, accept_states={self.accept_states}, setup={self.setup})"
+        return f"BaseAutomat(\n    states={self.states}\n    transitions_data={self.transitions_data}\n    start_state={self.start_state}\n    accept_states={self.accept_states}\n    setup={self.setup})"
 
     def get_money_to_letter(self):
         return self.money_to_letter

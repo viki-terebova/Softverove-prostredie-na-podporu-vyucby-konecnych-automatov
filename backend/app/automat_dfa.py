@@ -5,6 +5,9 @@ class AutomatDFA(BaseAutomat):
         super().__init__(states, transitions_data, start_state, accept_states, setup)
         self.graph = self._build_graph()
 
+    def __repr__(self):
+        return super().__repr__()
+
     def _build_graph(self):
         graph = {}
         for t in self.transitions_data:
@@ -35,17 +38,3 @@ class AutomatDFA(BaseAutomat):
             for symbol in symbols:
                 if symbol not in transitions:
                     raise ValueError(f"DFA missing transition from '{state}' on input '{symbol}'")
-
-    def get_all_valid_paths(self, limit=10):
-        results = []
-
-        def dfs(state, path):
-            if len(path) > limit:
-                return
-            if state in self.accept_states and path:
-                results.append(path)
-            for value, next_state in self.graph.get(state, {}).items():
-                dfs(next_state, path + [value])
-
-        dfs(self.start_state, [])
-        return results

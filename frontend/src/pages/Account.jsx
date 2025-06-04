@@ -53,6 +53,11 @@ export default function AccountPage() {
             });
             const result = await res.json();
             setMessage(result.message || result.error);
+
+            if (res.ok) {
+                setOldPassword("");
+                setNewPassword("");
+            }
         } catch {
             setMessage("Failed to change password.");
         } finally {

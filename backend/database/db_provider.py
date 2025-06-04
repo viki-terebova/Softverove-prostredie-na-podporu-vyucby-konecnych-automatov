@@ -300,6 +300,27 @@ class DBProvider:
             self.connection.rollback()
             raise ValueError(f"❌ SQL error in get_user_levels: {e}")
 
+    def get_all_levels(self):
+        try:
+            self.connection.rollback()
+            with self.connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT 
+                        l.*, 
+                        u.username AS owner_name, 
+                        c.title AS category_name
+                    FROM data.levels l
+                    LEFT JOIN data.users u ON l.owner_id = u.id
+                    LEFT JOIN data.categories c ON l.category_id = c.id
+                    ORDER BY l.created_at, l.owner_id, l.level_name;
+                """)
+                rows = cursor.fetchall()
+                colnames = [desc[0] for desc in cursor.description]
+            return rows_to_json_list(rows, colnames)
+        except Exception as e:
+            self.connection.rollback()
+            raise ValueError(f"❌ SQL error in get_all_levels: {e}")
+
     def create_user_level(self, owner_id, extracted_data):
         try:
             with self.connection.cursor() as cursor:
@@ -328,7 +349,7 @@ class DBProvider:
             self.connection.rollback()
             raise ValueError(f"❌ SQL error in create_user_level: {e}")
         
-    def update_user_level(self, level_id, owner_id, extracted_data):
+    def update_user_level(self, level_id, owner_id, category_id, person_image, automat_image, extracted_data):
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute("""
@@ -337,6 +358,7 @@ class DBProvider:
                         task = %s,
                         public = %s,
                         setup = %s,
+                        category_id = %s,
                         person_image = %s,
                         automat_image = %s,
                         owner_id = %s
@@ -346,8 +368,9 @@ class DBProvider:
                     extracted_data.get("task"),
                     extracted_data.get("public"),
                     json.dumps(extracted_data.get("setup")),
-                    extracted_data.get("person_image", "person1.png"),
-                    extracted_data.get("automat_image", "automat1.png"),
+                    category_id,
+                    person_image,
+                    automat_image,
                     owner_id,
                     level_id
                 ))

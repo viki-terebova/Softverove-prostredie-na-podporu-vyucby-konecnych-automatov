@@ -9,6 +9,7 @@ import TransitionArrow from "../components/TransitionArrow";
 import { formatBold } from "../utils/formatText";
 import Loading from "../components/Loading";
 import TutorialBubble from "../components/TutorialBubble";
+import tutorialSteps from "../utils/tutorialSteps";
 
 const EditorPage = () => {
   const { levelId: paramLevelId } = useParams();
@@ -51,7 +52,7 @@ const EditorPage = () => {
     return savedTransitions ? JSON.parse(savedTransitions) : [];
   });
   const [selectedState, setSelectedState] = useState(null);
-  const [addingTransitionMode, setAddingTransitionMode] = useState(false);
+  const [addingTransitionMode, setAddingTransitionMode] = useState(true);
   const [deleteTransitionMode, setdeleteTransitionMode] = useState(false);
   const [deleteStateMode, setDeleteStateMode] = useState(false);
   const [pendingTransition, setPendingTransition] = useState(null);
@@ -177,29 +178,6 @@ const EditorPage = () => {
 
   const [tutorialStep, setTutorialStep] = useState(0);
   const [tutorialVisible, setTutorialVisible] = useState(false);
-
-  const tutorialSteps = {
-    0: {
-      1: [
-        { text: "🟢 This is the Start state. The automat always begins here.", position: { top: "20vh", left: "12vw" } },
-        { text: "🔵 This is the Accept state. Reach this state with valid coins to succeed.", position: { top: "4vh", left: "72vw" } },
-        { text: "🔴 This is the Reject state. The paths that are connected to this state will be rejected by the automat.", position: { top: "25vh", left: "72vw" } },
-        { text: "+↗: If you want to add transition, this button needs to be selected.", position: { top: "58vh", left: "19vw" } },
-        { text: "💡 To create a transition, click one state, then another, and select the coin values. ", position: { top: "25vh", left: "42vw" } },
-        { text: "💰 For example, use a 0.1€ coin to connect Start and Accept. That means when the automat gets 0.1€ coin in Start state it will move to Accept state.", position: { top: "20vh", left: "42vw" } },
-        { text: "🧪 Press Test to check your automat!", position: { top: "65vh", left: "80vw" } }
-      ],
-      2: [
-        { text: "x↗: If you want to delete transition select this button and click on transition you want to delete.", position: {  top: "50vh", left: "23vw"  } }
-      ],
-      3: [
-        { text: "+○: To add state click this button. The state will appear in the editor. The state will be your checkpoint to remember the values you will connect to it.", position: {top: "42vh", left: "7vw" } },
-        { text: "💡 Use 10 and 20 cent coins to reach exactly 20 cents.", position: { top: "25vh", left: "35vw" } },
-        { text: "+○: If you want to delete state click this button and select state you want to delete.", position: { top: "54vh", left: "12vw" } }
-      ]
-    }
-  };
-
 
   const handleTest = async () => {
     const automatData = {
@@ -374,39 +352,11 @@ const EditorPage = () => {
         </div>
       )}
 
-      {showRequirements && level && (
-        <div className="speech-bubble">
-          <div className="speech-text">
-            <strong>Task:</strong><br />
-            {formatBold(level.task)}
-            <br /><br />
-            {level.setup.alphabet_count && Object.keys(level.setup.alphabet_count).length > 0 && (
-              <div>
-                <strong>
-                  <img 
-                    src="/images/icons/wallet.png" 
-                    alt="Wallet" 
-                    style={{ width: "25px", verticalAlign: "middle", marginRight: "6px" }} 
-                  />
-                  Wallet:
-                </strong><br />
-                {Object.entries(level.setup.alphabet_count).map(([coin, count]) => (
-                  <div key={coin}>
-                    {coin} € × {count}
-                  </div>
-                ))}
-              </div>
-            )}
-            <br />
-            <button onClick={() => setShowRequirements(false)}>✖ Close</button>
-          </div>
-        </div>
-      )}
-      {console.log("Tutorial Step:", tutorialStep, "Visible:", tutorialVisible, "Level Number:", level?.level_number)}
       {tutorialVisible && tutorialSteps[0]?.[level?.level_number] && (
         <TutorialBubble
           text={tutorialSteps[0][level.level_number][tutorialStep].text}
           position={tutorialSteps[0][level.level_number][tutorialStep].position}
+          onPrev={tutorialStep > 0 ? () => setTutorialStep(tutorialStep - 1) : null}
           onNext={() => {
             if (tutorialStep + 1 < tutorialSteps[0][level.level_number].length) {
               setTutorialStep(tutorialStep + 1);
@@ -417,37 +367,64 @@ const EditorPage = () => {
         />
       )}
 
+      {showRequirements && level && (
+        <div className="speech-bubble">
+          <div className="speech-text">
+            <strong>Task:</strong><br />
+            {formatBold(level.task)}
+            <br /><br />
+            {level.setup.alphabet_count && Object.keys(level.setup.alphabet_count).length > 0 && (
+              <div>
+                
+
+                <strong>✅ Accepted values: </strong>
+                {level.setup.accepted_values?.length
+                  ? level.setup.accepted_values.join(", ") + " €"
+                  : " -"}
+                <br />
+
+                <strong>🚫 Forbidden values: </strong>
+                {level.setup.forbidden_values?.length
+                  ? level.setup.forbidden_values.join(", ") + " €"
+                  : " -"}
+                <br />
+
+                <strong>📏 Max input length: </strong>
+                {level.setup.max_input_length !== null && level.setup.max_input_length !== undefined && level.setup.max_input_length !== ""
+                  ? level.setup.max_input_length
+                  : " -"}
+                <br />
+
+                <strong>🫧 Automat type: </strong> 
+                {level.setup.type === 'NFA'
+                  ? "NFA - Nondeterministic Finite Automat: can have multiple possible paths for one coin value. It can move to several states at the same time."
+                  : level.setup.type === 'DFA'
+                    ? "DFA - Deterministic Finite Automat: for each state and coin value, there is only one possible next state. The path is unique and clear."
+                    : " -"}
+              </div>
+            )}
+            <button onClick={() => setShowRequirements(false)}>✖ Close</button>
+          </div>
+        </div>
+      )}
+
       {showHint && level && (
         <div className="speech-bubble hint-bubble">
           <div className="speech-text hint-bubble">
-            <strong>💡 Level Requirements</strong>
-            <br /><br />
-
-            <strong>✅ Accepted values:</strong><br />
-            {level.setup.accepted_values?.length
-              ? level.setup.accepted_values.join(", ") + " €"
-              : "None"}
-            <br /><br />
-
-            <strong>🚫 Forbidden values:</strong><br />
-            {level.setup.forbidden_values?.length
-              ? level.setup.forbidden_values.join(", ") + " €"
-              : "None"}
-            <br /><br />
-
-            <strong>📏 Max input length:</strong><br />
-            {level.setup.max_input_length !== null && level.setup.max_input_length !== undefined
-              ? level.setup.max_input_length
-              : "None"}
-            <br /><br />
-
-            <strong>🫧 Automat type:</strong><br />
-            {level.setup.type === 'NFA'
-              ? "NFA - Nondeterministic Finite Automat: can have multiple possible paths for one coin value. It can move to several states at the same time."
-              : level.setup.type === 'DFA'
-                ? "DFA - Deterministic Finite Automat: for each state and coin value, there is only one possible next state. The path is unique and clear."
-                : "-"}
-            <br /><br />
+            <strong>
+                  <img 
+                    src="/images/icons/wallet.png" 
+                    alt="Wallet" 
+                    style={{ width: "25px", verticalAlign: "middle", marginRight: "6px" }} 
+                  />
+                  Wallet:
+                </strong><br /><br />
+                {Object.entries(level.setup.alphabet_count).map(([coin, count]) => (
+                  <div key={coin}>
+                    {coin} € × {count}
+                  </div>
+                ))}
+                <br />
 
             <button onClick={() => setShowHint(false)}>✖ Close</button>
           </div>
@@ -481,8 +458,6 @@ const EditorPage = () => {
                   const toId = t.to;
                   const hasOpposite = transitionPairs.has(`${toId}->${fromId}`);
                   const directionOffset = hasOpposite ? -1 : 0;
-
-                  console.log("Transition:", t, "From:", from, "To:", to, "Direction Offset:", directionOffset);
 
                   return (
                     <TransitionArrow
@@ -566,8 +541,6 @@ const EditorPage = () => {
             </div>
           )}
 
-
-
           <div className="editor-footer">
           <div className="footer-center">
           <div className=" editor-button add-state-button" onClick={addState} title="Add state">+○</div>
@@ -588,12 +561,11 @@ const EditorPage = () => {
             className={`editor-button add-arrow-button ${addingTransitionMode ? "active" : ""}`}
             onClick={() => {
               setAddingTransitionMode(prev => {
-                const newState = !prev;
-                if (!newState) {
-                  setSelectedState(null);
-                  setPendingTransition(null);
-                }
-                return newState;
+                if (!prev) setDeleteStateMode(false);
+                if (!prev) setdeleteTransitionMode(false);
+                setSelectedState(null);
+                setPendingTransition(null);
+                return !prev;
               });
             }}
             title="Create transition"
@@ -602,7 +574,13 @@ const EditorPage = () => {
           </div>
           <div
             className={`editor-button remove-button ${deleteTransitionMode ? "active" : ""}`}
-            onClick={() => setdeleteTransitionMode(prev => !prev)}
+            onClick={() => {
+              setdeleteTransitionMode(prev => {
+                if (!prev) setAddingTransitionMode(false); 
+                setSelectedState(null);
+                return !prev;
+              });
+            }}
             title="Delete transition"
           >
             x↗
@@ -615,16 +593,23 @@ const EditorPage = () => {
             Reset
           </div>
           </div>
+
+          <div className="footer-center">
+            <div className="level-name-display">
+              {level?.level_name || level?.level_number ? <p>{level.level_name}</p> : "Level name not available"}
+            </div>
+          </div>
+
           <div className="footer-right">
             {level?.person_image && (
-              <div className="character-with-hint">
-                <img
-                  src="/images/icons/bulb.png"
-                  alt="Hint"
-                  title="View requirements"
-                  className="hint-icon"
-                  onClick={() => setShowHint(prev => !prev)}
-                />
+              <div>
+                <img 
+                    src="/images/icons/wallet.png" 
+                    alt="Wallet" 
+                    title="View wallet"
+                    className="hint-icon"
+                    onClick={() => setShowHint(prev => !prev)}
+                  />
 
                 <img
                   src={`/images/persons/${level.person_image}`}

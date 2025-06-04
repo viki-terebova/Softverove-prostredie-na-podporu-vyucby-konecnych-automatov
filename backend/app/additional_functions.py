@@ -22,6 +22,8 @@ def extract_level_data(data):
         task = data.get("task")
         public = data.get("public", False)
         setup = data.get("setup", {})
+        person_image = data.get("person_image", "person1.png")
+        automat_image = data.get("automat_image", "automat1.png")
 
         required_fields = ["transition_values", "accepted_values"]
         for field in required_fields:
@@ -43,7 +45,9 @@ def extract_level_data(data):
             "level_name": level_name,
             "task": task,
             "public": public,
-            "setup": final_setup
+            "setup": final_setup,
+            "automat_image": automat_image,
+            "person_image": person_image,
         }
         return extracted_data
     except Exception as e:

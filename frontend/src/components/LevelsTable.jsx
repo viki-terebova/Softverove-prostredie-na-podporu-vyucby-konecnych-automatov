@@ -1,19 +1,16 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import Loading from "./Loading";
 import Button from "./Button";
 
-export default function LevelTable({ levels, loading, showEdit = false, onEditClick, showAdd = false, onAddClick, onDeleteClick }) {
-    const navigate = useNavigate();
-
-    // Sorting state
+export default function LevelsTable({ levels, loading, showEdit = false, onEditClick, showAdd = false, onAddClick, onDeleteClick, onRowClick, userRole }) {
+    const isAdmin = userRole === "admin";
     const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
-
-    // Filtering state
     const [filters, setFilters] = useState({
         username: "",
         level_name: "",
         created_at: "",
+        owner_name: "",
+        category_name: ""
     });
 
     const requestSort = (key) => {
@@ -28,7 +25,9 @@ export default function LevelTable({ levels, loading, showEdit = false, onEditCl
         return (
             (!level.username || level.username.toLowerCase().includes(filters.username.toLowerCase())) &&
             level.level_name.toLowerCase().includes(filters.level_name.toLowerCase()) &&
-            level.created_at.includes(filters.created_at)
+            level.created_at.includes(filters.created_at) &&
+            (!filters.owner_name || (level.owner_name || "").toLowerCase().includes(filters.owner_name.toLowerCase())) &&
+            (!filters.category_name || (level.category_name || "").toLowerCase().includes(filters.category_name.toLowerCase()))
         );
     });
 
@@ -62,10 +61,20 @@ export default function LevelTable({ levels, loading, showEdit = false, onEditCl
                                     User {sortConfig.key === "username" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▲▼"}
                                 </th>
                             )}
+                            {isAdmin && (
+                            <>
+                                <th onClick={() => requestSort("owner_name")} className="clickable">
+                                    Owner {sortConfig.key === "owner_name" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▲▼"}
+                                </th>
+                                <th onClick={() => requestSort("category_name")} className="clickable">
+                                    Category {sortConfig.key === "category_name" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▲▼"}
+                                </th>
+                            </>
+                            )}
                             <th onClick={() => requestSort("created_at")} className="clickable">
                                 Created At {sortConfig.key === "created_at" ? (sortConfig.direction === "asc" ? "▲" : "▼") : "▲▼"}
                             </th>
-                            {showEdit && <th>Edit</th>}
+                            {showEdit && <th></th>}
                         </tr>
                         <tr>
                             <th>
@@ -86,6 +95,26 @@ export default function LevelTable({ levels, loading, showEdit = false, onEditCl
                                     />
                                 </th>
                             )}
+                            {isAdmin && (
+                                <>
+                                    <th>
+                                        <input
+                                            value={filters.owner_name}
+                                            onChange={(e) => setFilters({ ...filters, owner_id: e.target.value })}
+                                            placeholder="Filter..."
+                                            className="filter-input"
+                                        />
+                                    </th>
+                                    <th>
+                                        <input
+                                            value={filters.category_name}
+                                            onChange={(e) => setFilters({ ...filters, category_id: e.target.value })}
+                                            placeholder="Filter..."
+                                            className="filter-input"
+                                        />
+                                    </th>
+                                </>
+                            )}
                             <th>
                                 <input
                                     value={filters.created_at}
@@ -94,14 +123,20 @@ export default function LevelTable({ levels, loading, showEdit = false, onEditCl
                                     className="filter-input"
                                 />
                             </th>
-                            {showEdit && <th />}
+                            {showEdit && <th></th>}
                         </tr>
                     </thead>
                     <tbody>
                         {sortedLevels.map((level, index) => (
-                            <tr key={index}>
+                            <tr
+                                key={index}
+                                onClick={() => onRowClick && onRowClick(level)}
+                                style={{ cursor: onRowClick ? "pointer" : "default" }}
+                            >
                                 <td>{level.level_name}</td>
                                 {level.username !== undefined && <td>{level.username}</td>}
+                                {isAdmin && <td>{level.owner_name || "-"}</td>}
+                                {isAdmin && <td>{level.category_name || "-"}</td>}
                                 <td>
                                     {new Date(level.created_at).toLocaleDateString("sk-SK")}{" "}
                                     {new Date(level.created_at).toLocaleTimeString("sk-SK", {
@@ -110,10 +145,20 @@ export default function LevelTable({ levels, loading, showEdit = false, onEditCl
                                     })}
                                 </td>
                                 {showEdit && (
-                                    <div className="level-action-buttons">
-                                        <button className="form-button small" onClick={() => onEditClick(level.id)}>Edit</button>
-                                        <button className="form-button small delete" onClick={() => onDeleteClick(level.id)}>Delete</button>
-                                    </div>
+                                    <td>
+                                        <div className="level-action-buttons">
+                                            <button className="form-button small" 
+                                                onClick={(e) => 
+                                                    {e.stopPropagation();
+                                                    onEditClick(level.id)
+                                                }}>Edit</button>
+                                            <button className="form-button small delete" 
+                                                onClick={(e) => 
+                                                    {e.stopPropagation();
+                                                    onDeleteClick(level.id)
+                                                }}>Delete</button>
+                                        </div>
+                                    </td>
                                 )}
                             </tr>
                         ))}

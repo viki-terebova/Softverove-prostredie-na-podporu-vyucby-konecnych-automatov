@@ -11,6 +11,7 @@ from app.additional_functions import extract_level_data
 from app.automat_nfa import AutomatNFA
 from app.automat_dfa import AutomatDFA
 from app.base_validator import BaseValidator
+import re
 
 # for recognizing the db package
 from database.db_provider import DBProvider
@@ -45,12 +46,18 @@ def login_route():
 @app.route("/api/v1/register", methods=["POST"])
 def register():
     data = request.get_json()
-    username = data.get("username")
-    mail = data.get("mail")
-    password = data.get("password")
+    username = data.get("username", "").strip()
+    mail = data.get("mail", "").strip()
+    password = data.get("password", "").strip()
 
     if not all([username, mail, password]):
         return jsonify({"error": "All fields are required."}), 400
+
+    if not re.match(r"^[a-zA-Z0-9_]+$", username):
+        return jsonify({"error": "Username can only contain letters, numbers, and underscores, and no spaces."}), 400
+
+    if username.lower() == "admin":
+        return jsonify({"error": "Nice try! The username cannot be admin.😏"}), 400
 
     try:
         user_id = database.register_user(username, mail, password)
@@ -72,10 +79,11 @@ def get_current_user():
             "id": current_user.id,
             "username": current_user.username,
             "mail": current_user.mail,
+            "user_role": current_user.user_role
         })
     else:
         return jsonify({"authenticated": False}), 401
-    
+
 @app.route("/api/v1/session_status")
 def session_status():
     print(f"Session status: {current_user.is_authenticated}")
@@ -181,6 +189,7 @@ def get_level_by_uuid():
 
     level_data = database.get_level_details(level_id)
 
+    print(level_data)
     if level_data is None:
         return jsonify({"error": "Level not found"}), 404
 
@@ -221,6 +230,13 @@ def change_password():
 def update_account():
     data = request.get_json()
     username = data.get("username")
+
+    if not username:
+        return jsonify({"error": "Username needs to be filled"}), 400
+
+    if not re.match(r"^[a-zA-Z0-9_]+$", username):
+        return jsonify({"error": "Username can only contain letters, numbers, and underscores, and no spaces."}), 400
+
     if username:
         result = database.update_username(current_user.id, username)
         if result.get("error"):
@@ -244,7 +260,6 @@ def test_automat():
     level_id = data.get("level_id", None)
     if not level_id:
         return jsonify({"error": "Missing level_id"}), 400
-
     level_data = database.get_level_details(level_id)
     
     states = data.get("states")
@@ -253,7 +268,6 @@ def test_automat():
     accept_states = data.get("accept_states")
     setup = level_data.get("setup")
     automat_type = setup.get("type", "NFA").upper()
-
 
     if not states:
         return jsonify({"error": "Missing states data"}), 400
@@ -303,7 +317,6 @@ def get_achieved_level():
     if result is None:
         return jsonify({"exists": False})
 
-    print(result["level_setup"])
     return jsonify({
         "exists": True,
         "states": result["level_setup"]["states"],
@@ -313,15 +326,16 @@ def get_achieved_level():
 
 @app.route("/api/v1/get_user_levels", methods=["GET"])
 def get_user_levels():
-    user_id = current_user.id
-    levels = database.get_user_levels(user_id)
+    if current_user.user_role and current_user.user_role == 'admin':
+        levels = database.get_all_levels()
+    else:
+        user_id = current_user.id
+        levels = database.get_user_levels(user_id)
 
     if levels is None:
         return jsonify({"error": "Database error"}), 500
 
     return jsonify(levels)
-
-
 
 @app.route("/api/v1/save_level", methods=["POST"])
 @login_required
@@ -340,15 +354,18 @@ def save_level():
 @login_required
 def update_level():
     level_id = request.args.get("level_id")
+    level_data = database.get_level_details(level_id)
     data = request.get_json()
     extracted_data = extract_level_data(data)
     if "error" in extracted_data:
         return jsonify({"error": extracted_data["error"]}), 400
-    print(extracted_data)
 
     success = database.update_user_level(
         level_id=level_id,
-        owner_id=current_user.id,
+        owner_id=level_data.get("owner_id"),
+        category_id=level_data.get("category_id"),
+        person_image=level_data.get("person_image", "person1.png"),
+        automat_image=level_data.get("automat_image", "automat1.png"),
         extracted_data=extracted_data,
     )
 

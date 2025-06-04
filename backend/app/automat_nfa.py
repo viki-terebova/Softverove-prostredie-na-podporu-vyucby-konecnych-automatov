@@ -42,20 +42,3 @@ class AutomatNFA(BaseAutomat):
             for next_state in self.graph.get(state, {}).get(coin, []):
                 queue.append((next_state, index + 1))
         return False
-
-    def get_all_valid_paths(self, limit=10):
-        from collections import deque
-        results = []
-        queue = deque([(self.start_state, [], 0)])  # state, path, depth
-
-        while queue:
-            state, path, depth = queue.popleft()
-            if depth >= limit:
-                continue
-            if state in self.accept_states and path:
-                results.append(path)
-            for value, next_states in self.graph.get(state, {}).items():
-                for next_state in next_states:
-                    queue.append((next_state, path + [value], depth + 1))
-
-        return results

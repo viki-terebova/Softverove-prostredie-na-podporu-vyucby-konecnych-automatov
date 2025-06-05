@@ -14,9 +14,3 @@ database:
 default:
   user_id: 0
   user_name: "Default"
-deploy:
-  SERVER_NAME: ec2-56-228-12-164.eu-north-1.compute.amazonaws.com
-  USER: ubuntu
-  REMOTE_PATH: ~/app
-  LOCAL_PATH: .
-  PEM_FILE: ../aws/slovakia-viki-asus.pem

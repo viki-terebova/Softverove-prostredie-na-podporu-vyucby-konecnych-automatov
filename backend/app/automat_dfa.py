@@ -3,7 +3,9 @@ from app.base_automat import BaseAutomat
 class AutomatDFA(BaseAutomat):
     def __init__(self, states, transitions_data, start_state, accept_states, setup):
         super().__init__(states, transitions_data, start_state, accept_states, setup)
+        self.transitions_data_original = transitions_data
         self.graph = self._build_graph()
+
 
     def __repr__(self):
         return super().__repr__()
@@ -31,10 +33,49 @@ class AutomatDFA(BaseAutomat):
             state = self.graph[state][coin]
         return state == "Reject"
     
-    def _validate_dfa_completeness(self):
-        symbols = [float(k) for k in self.setup.get("transition_values") or self.setup.get("alphabet_count", {}).keys()]
-        for state in self.states:
-            transitions = self.graph.get(state, {})
-            for symbol in symbols:
-                if symbol not in transitions:
-                    raise ValueError(f"DFA missing transition from '{state}' on input '{symbol}'")
+    def validate_dfa_completeness(self):
+        expected_inputs = {float(k) for k in self.alphabet}
+        transition_keys = set()
+        transitions_by_state = {}
+
+        for t in self.transitions_data_original:
+            from_state = t["from"]
+            value = float(t["value"])
+            key = (from_state, value)
+
+            if key in transition_keys:
+                return {
+                    "accepted": False,
+                    "reason": f"DFA Error: multiple transitions from state '{from_state}' on value '{value}'."
+                }
+            transition_keys.add(key)
+            transitions_by_state.setdefault(from_state, set()).add(value)
+
+        from collections import deque
+        reachable_states = set()
+        queue = deque([self.start_state])
+
+        while queue:
+            state = queue.popleft()
+            if state in reachable_states:
+                continue
+            reachable_states.add(state)
+            for t in self.transitions_data_original:
+                if t["from"] == state:
+                    queue.append(t["to"])
+
+        for state in reachable_states:
+            if state.startswith("Reject"):
+                continue
+            defined_values = transitions_by_state.get(state, set())
+
+            if defined_values != expected_inputs:
+                return {
+                    "accepted": False,
+                    "reason": (
+                        f"DFA state '{state}' is missing transitions. "
+                        f"Expected all of: {expected_inputs}, found: {defined_values}"
+                    )
+                }
+
+        return { "accepted": True }

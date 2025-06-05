@@ -268,7 +268,7 @@ def test_automat():
     accept_states = data.get("accept_states")
     setup = level_data.get("setup")
     automat_type = setup.get("type", "NFA").upper()
-
+    print(level_data)
     if not states:
         return jsonify({"error": "Missing states data"}), 400
     if not start_state:
@@ -357,7 +357,11 @@ def update_level():
     level_data = database.get_level_details(level_id)
     data = request.get_json()
     extracted_data = extract_level_data(data)
+    print("Received data:", data)
+    print("Extracted data:", extracted_data)
     if "error" in extracted_data:
+        print("Received data:", data)
+        print("Extracted data:", extracted_data)
         return jsonify({"error": extracted_data["error"]}), 400
 
     success = database.update_user_level(
@@ -382,7 +386,12 @@ def delete_level():
     if not level_id:
         return jsonify({"error": "Missing level_id"}), 400
 
-    success = database.delete_user_level(level_id=level_id, user_id=current_user.id)
+    is_admin = current_user.user_role == "admin"
+    success = database.delete_user_level(
+        level_id=level_id,
+        user_id=current_user.id,
+        is_admin=is_admin
+    )
 
     if success:
         return jsonify({"message": "Level deleted successfully."}), 200

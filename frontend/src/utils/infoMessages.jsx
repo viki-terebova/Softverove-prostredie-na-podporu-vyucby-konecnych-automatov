@@ -4,35 +4,11 @@ const infoMessages = {
     transitionValues: "Add coin values the player can use as transition labels. Example: 0.1, 0.2 .",
     wallet: "Specify how many times each coin value can be used in one path. These form the alphabet of the automat. For example, 0.2 → 2 means two 20-cent coins available.",
     acceptedValues: `
-    You can define what sequences the automat should accept in two ways:
+    You can define what sequences the automat should accept:
 
     1. **Total Values** (default):  
     Enter one or more target totals (e.g. \`0.7\`, \`1.0\`). The automat should accept a sequence whose coin values add up to any of these.  
-    Example: \`0.1, 0.2, 0.4\` → Total 0.7 → Accepted
-
-    2. **Rule-based Conditions** (use only one at a time):  
-    Instead of totals, use one of the special rules below by entering a JSON object like:  
-    \`{ "ends_with": 0.2 }\`
-
-    - **ends_with**: The last value in the sequence must match.  
-        Example: \`{ "ends_with": 0.5 }\` → Accepts \`[0.1, 0.5]\`
-
-    - **starts_with**: The first value must match.  
-        Example: \`{ "starts_with": 0.2 }\` → Accepts \`[0.2, 0.1]\`
-
-    - **alternating**: Values must follow a repeating pattern.  
-        Example: \`{ "alternating": [0.1, 0.2] }\` → Accepts \`[0.1, 0.2, 0.1]\`
-
-    - **repeat**: A specific value must occur at least a certain number of times.  
-        Example: \`{ "repeat": [0.5, 3] }\` → Accepts \`[0.5, 0.5, 0.1, 0.5]\`
-
-    - **start_from_each**: Sequence must start with one of the specified patterns.  
-        Example: \`{ "start_from_each": [[0.1, 0.2], [0.2, 0.5]] }\` → Accepts \`[0.1, 0.2, 1.0]\` or \`[0.2, 0.5, 0.1]\`
-
-    📌 **Note**:  
-    - You can enter either a list of values or a single rule — not both.  
-    - Values must use dot notation (e.g. \`0.2\`), not comma.  
-    - If using rules, use exact JSON syntax.`,
+    Example: path:\`0.1, 0.2, 0.4\` → Total 0.7 → Accepted`,
 
     acceptAll: "If checked, the automat must accept every value listed above at least once in the automat. If unchecked, it only needs to accept at least one of the values.",
 
@@ -67,3 +43,5 @@ const infoMessages = {
 };
 
 export default infoMessages;
+
+

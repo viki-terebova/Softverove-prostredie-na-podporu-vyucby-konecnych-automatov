@@ -10,6 +10,7 @@ export default function UserLevelsPage() {
   const [levels, setLevels] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [message, setMessage] = useState("");
 
   const [user, setUser] = useState(null);
 
@@ -41,12 +42,15 @@ export default function UserLevelsPage() {
       if (response.ok) {
         const updatedRes = await fetch("/api/v1/get_user_levels");
         const updatedData = await updatedRes.json();
+        setMessage("Level succesfully deleted.");
         setLevels(updatedData);
       } else {
         console.error("Failed to delete level");
+        setMessage((result.error || "Failed to delete level."));
       }
     } catch (error) {
       console.error("Error deleting level:", error);
+      setMessage("Error deleting level.");
     } finally {
       setLoading(false);
     }
@@ -55,6 +59,17 @@ export default function UserLevelsPage() {
   return (
     <div className="start-page user-levels-page">
       <Menu />
+      {message && (
+          <div className="auth-banner">
+              {message}
+              <button
+                  className="auth-banner-close"
+                  onClick={() => setMessage("")}
+              >
+                  ✖
+              </button>
+          </div>
+      )}
       <h1 className="public-levels-title">My Levels</h1>
       <div className="create-level-button">
       <Button

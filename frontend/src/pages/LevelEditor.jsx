@@ -64,63 +64,68 @@ export default function LevelEditorPage() {
 
     try {
         if (raw.startsWith("{")) {
-        const obj = JSON.parse(raw);
+            const obj = JSON.parse(raw);
 
-        const validKeys = [
-            "ends_with",
-            "starts_with",
-            "alternating",
-            "repeat",
-            "start_from_each"
-        ];
+            const validKeys = [
+                "ends_with",
+                "starts_with",
+                "alternating",
+                "repeat",
+                "start_from_each"
+            ];
 
-        const keys = Object.keys(obj);
+            const keys = Object.keys(obj);
 
-        if (keys.length !== 1 || !validKeys.includes(keys[0])) {
-            throw new Error("Invalid rule type.");
-        }
-
-        const value = obj[keys[0]];
-
-        switch (keys[0]) {
-            case "ends_with":
-            case "starts_with":
-            if (typeof value !== "number") throw new Error("Value must be a number.");
-            break;
-            case "alternating":
-            if (!Array.isArray(value) || value.some(v => typeof v !== "number")) {
-                throw new Error("Alternating must be an array of numbers.");
+            if (keys.length !== 1 || !validKeys.includes(keys[0])) {
+                throw new Error("Invalid rule type.");
             }
-            break;
-            case "repeat":
-            if (
-                !Array.isArray(value) ||
-                value.length !== 2 ||
-                typeof value[0] !== "number" ||
-                typeof value[1] !== "number"
-            ) {
-                throw new Error("Repeat must be [number, count].");
-            }
-            break;
-            case "start_from_each":
-            if (
-                !Array.isArray(value) ||
-                value.some(seq => !Array.isArray(seq) || seq.some(v => typeof v !== "number"))
-            ) {
-                throw new Error("Each pattern must be an array of numbers.");
-            }
-            break;
-        }
 
-        setAcceptedValues([obj]);
+            const value = obj[keys[0]];
+
+            switch (keys[0]) {
+                case "ends_with":
+                case "starts_with":
+                    if (
+                        !Array.isArray(value) ||
+                        value.some(v => typeof v !== "number")
+                    ) {
+                        throw new Error(`${keys[0]} must be an array of numbers.`);
+                    }
+                    break;
+                case "alternating":
+                    if (!Array.isArray(value) || value.some(v => typeof v !== "number")) {
+                        throw new Error("Alternating must be an array of numbers.");
+                    }
+                    break;
+                case "repeat":
+                    if (
+                        !Array.isArray(value) ||
+                        value.length !== 2 ||
+                        typeof value[0] !== "number" ||
+                        typeof value[1] !== "number"
+                    ) {
+                        throw new Error("Repeat must be [number, count].");
+                    }
+                    break;
+                case "start_from_each":
+                    if (
+                        !Array.isArray(value) ||
+                        value.some(seq => !Array.isArray(seq) || seq.some(v => typeof v !== "number"))
+                    ) {
+                        throw new Error("Each pattern must be an array of numbers.");
+                    }
+                    break;
+            }
+            setAcceptedValues([obj]);
+
         } else {
-        const values = raw
-            .split(",")
-            .map(v => parseFloat(v.trim()))
-            .filter(v => !isNaN(v));
+            const values = raw
+                .split(",")
+                .map(v => parseFloat(v.trim()))
+                .filter(v => !isNaN(v));
 
-        if (values.length === 0) {
-            throw new Error("No valid numeric values provided.");
+            if (values.length === 0) {
+                throw new Error("No valid numeric values provided.");
         }
 
         const prev = acceptedValues.filter(v => typeof v === "number");
@@ -132,8 +137,12 @@ export default function LevelEditorPage() {
         setNewAcceptedValue("");
         setMessage("");
     } catch (err) {
-        setMessage("❌ " + err.message);
+        setMessage("" + err.message);
     }
+    };
+
+    const removeAcceptedValue = (index) => {
+        setAcceptedValues(acceptedValues.filter((_, i) => i !== index));
     };
 
     const addWalletValue = () => {
@@ -202,7 +211,6 @@ export default function LevelEditorPage() {
                 console.log("Setup data:", data.setup);
                 const setup = data.setup || {};
                 setTransitionValues(setup.transition_values || []);
-                setAcceptedValues(setup.accepted_values || []);
                 setAcceptAll(setup.accept_all || false);
                 setSequences(setup.sequences || []);
                 setIsPublic(data.public || false);
@@ -211,6 +219,19 @@ export default function LevelEditorPage() {
                 setAlphabetCount(Object.entries(setup.alphabet_count || {}).map(([value, count]) => ({ value: parseFloat(value), count })));
                 setForbiddenValues(setup.forbidden_values || []);
                 setAcceptAllSequences(setup.accept_all_sequences || false);
+                if (Array.isArray(setup.accepted_values)) {
+                    setAcceptedValues(setup.accepted_values);
+                    setNewAcceptedValue("");
+                } else if (
+                    typeof setup.accepted_values === "object" &&
+                    setup.accepted_values !== null
+                ) {
+                    setAcceptedValues([]);
+                    setNewAcceptedValue(JSON.stringify(setup.accepted_values, null, 2)); 
+                } else {
+                    setAcceptedValues([]);
+                    setNewAcceptedValue("");
+                }
             })
             .catch(err => {
                 console.error("Failed to load level data:", err);
@@ -219,6 +240,12 @@ export default function LevelEditorPage() {
             .finally(() => setLoading(false));
         }
     }, [levelId]);
+
+    useEffect(() => {
+        if (newAcceptedValue && !acceptedValues.length) {
+            addAcceptedValue();
+        }
+    }, [newAcceptedValue]);
 
     const handleSave = () => {
         setLoading(true);
@@ -244,23 +271,12 @@ export default function LevelEditorPage() {
             return;
         }
 
-        let parsedAcceptedValues;
-
-        try {
-        if (newAcceptedValue.includes("{")) {
-            parsedAcceptedValues = JSON.parse(newAcceptedValue);
-        } else {
-            parsedAcceptedValues = newAcceptedValue
-            .split(",")
-            .map(v => parseFloat(v.trim()))
-            .filter(v => !isNaN(v));
+        const parsedAcceptedValues = acceptedValues.map(v => parseFloat(v)).filter(v => !isNaN(v));
+        if (parsedAcceptedValues.length === 0) {
+            setMessage("Accepted values must contain at least one number.");
+            setLoading(false);
+            return;
         }
-        } catch (e) {
-        setMessage("Invalid accepted values format. Check your JSON syntax.");
-        setLoading(false);
-        return;
-        }
-
 
         const alphabetCountObject = {};
         alphabetCount.forEach(item => {
@@ -283,11 +299,14 @@ export default function LevelEditorPage() {
                 accept_all_sequences: acceptAllSequences
             }
         };
-    
+        console.log("acceptedValues:", acceptedValues);
+        console.log("newAcceptedValue:", newAcceptedValue);
+        console.log("parsedAcceptedValues:", parsedAcceptedValues);
+
         const url = levelId
             ? `/api/v1/update_level?level_id=${levelId}`
             : "/api/v1/save_level";
-    
+
         fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -367,7 +386,7 @@ export default function LevelEditorPage() {
                     </div>
                 </div>
                 <ul>
-                    {acceptedValues.map((value, index) => (
+                    {Array.isArray(acceptedValues) && acceptedValues.map((value, index) => (
                         <li key={index}>
                             {typeof value === "object" ? JSON.stringify(value) : value}
                             <button onClick={() => removeAcceptedValue(index)} className="remove-button2">✖</button>

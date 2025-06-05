@@ -13,22 +13,16 @@ class BaseValidator:
         self.forbidden_values = set(setup.get("forbidden_values", []))
         self.required_sequences = setup.get("sequences", [])
         self.accept_all_sequences = setup.get("accept_all_sequences", False)
-        self.max_input_length = setup.get("max_input_length", 40)
+        self.max_input_length = setup.get("max_input_length", 10)
+        print(self.automat)
 
     def run(self):
         if not self.automat or type(self.automat) not in (AutomatNFA, AutomatDFA):
             return {"accepted": False, "reason": "Automat is not defined."}
-        if self.setup.get("type", "").upper() == "DFA":
-            expected_inputs = {float(k) for k in self.wallet.keys()}
-            for state in self.automat.states:
-                if state.startswith("Reject"):
-                    continue
-                transitions = self.automat.graph.get(state, {})
-                if set(transitions.keys()) != expected_inputs:
-                    return {
-                        "accepted": False,
-                        "reason": f"DFA state '{state}' is missing transitions. Expected: {expected_inputs}, found: {set(transitions.keys())}"
-                    }
+        if type(self.automat) == AutomatDFA:
+            result = self.automat.validate_dfa_completeness()
+            if not result.get("accepted", True):
+                return result
 
         queue = deque([(self.automat.start_state, [], Counter())])
         matched_sequences = []
@@ -37,6 +31,7 @@ class BaseValidator:
 
         while queue:
             state, path, used = queue.popleft()
+            print(path)
 
             if self.automat.accepts(path):
                 if self.max_input_length and len(path) > self.max_input_length:
@@ -54,30 +49,6 @@ class BaseValidator:
                         "reason": f"The person does not have enough money in wallet for sequence: {path}."
                     }
 
-                if isinstance(self.accepted_values, dict):
-                    for rule, expected in self.accepted_values.items():
-                        if rule == "ends_with" and not path[-1:] == expected:
-                            return {"accepted": False, "reason": f"Accepted sequence {path} does not end with {expected}."}
-                        elif rule == "starts_with" and not path[:1] == expected:
-                            return {"accepted": False, "reason": f"Accepted sequence {path} does not start with {expected}."}
-                        elif rule == "alternating":
-                            if not all(path[i] == expected[i % len(expected)] for i in range(len(path))):
-                                return {"accepted": False, "reason": f"Accepted sequence {path} does not match alternating pattern {expected}."}
-                        elif rule == "repeat":
-                            val, count = expected[0], expected[1]
-                            if path.count(val) < count:
-                                return {"accepted": False, "reason": f"Accepted sequence {path} does not repeat {val} at least {count} times."}
-                        elif rule == "start_from_each":
-                            if not any(all(path[i] == v for i, v in enumerate(pat)) for pat in expected if len(path) >= len(pat)):
-                                return {"accepted": False, "reason": f"Accepted sequence {path} does not match any required start pattern."}
-                else:
-                    total = round(sum(path), 2)
-                    required = set(round(v, 2) for v in self.accepted_values)
-                    if total not in required:
-                        return {"accepted": False, "reason": f"Accepted sequence {path} total {total} not in allowed totals {required}."}
-                    else:
-                        matched_values.add(total)
-
                 matched_sequences.append(path)
                 for req in self.required_sequences:
                     for i in range(len(path) - len(req) + 1):
@@ -91,11 +62,33 @@ class BaseValidator:
                 return {"accepted": False, "reason": f"Sequence {path} leads to both Accept and Reject."}
 
             for value, next in self.automat.graph.get(state, {}).items():
+                new_path = path + [value]
+                if self.max_input_length and len(new_path) > self.max_input_length:
+                    continue
+
                 if isinstance(next, list):
                     for ns in next:
-                        queue.append((ns, path + [value], used + Counter([value])))
-                else: 
-                    queue.append((next, path + [value], used + Counter([value])))
+                        queue.append((ns, new_path, used + Counter([value])))
+                else:
+                    queue.append((next, new_path, used + Counter([value])))
+
+        if isinstance(self.accepted_values, dict):
+            rule_matched = [p for p in matched_sequences if self._matches_rule(p)]
+            if not rule_matched:
+                return {"accepted": False, "reason": "No sequences matched the accepted rule."}
+            return {"accepted": True, "valid_paths": rule_matched}
+
+        elif isinstance(self.accepted_values, list):
+            required_totals = {round(sum(p), 2) if isinstance(p, list) else round(p, 2) for p in self.accepted_values}
+            list_matched = []
+            for path in matched_sequences:
+                total = round(sum(path), 2)
+                if total in required_totals:
+                    list_matched.append(path)
+                    matched_values.add(total)
+            if not list_matched:
+                return {"accepted": False, "reason": "No sequences matched the accepted totals."}
+            return {"accepted": True, "valid_paths": list_matched}
 
         if self.accept_all_sequences and len(matched_required) < len(self.required_sequences):
             missing = [s for s in self.required_sequences if tuple(s) not in matched_required]
@@ -116,20 +109,24 @@ class BaseValidator:
             if v > self.wallet.get(k, 0):
                 return False
         return True
-
-    def generate_valid_combinations(self):
-        wallet_list = []
-        for value, count in self.wallet.items():
-            wallet_list.extend([value] * count)
-
-        valid_combos = set()
-        max_length = self.max_input_length or len(wallet_list)
-
-        for length in range(1, min(len(wallet_list), max_length) + 1):
-            for combo in combinations(wallet_list, length):
-                combo_sum = round(sum(combo), 2)
-                if combo_sum in self.accepted_values and not any(val in self.forbidden_values for val in combo):
-                    if Counter(combo) <= Counter(wallet_list):
-                        valid_combos.add(tuple(sorted(combo)))
-
-        return [list(seq) for seq in valid_combos]
+    
+    def _matches_rule(self, path):
+        """Check if a given path satisfies accepted_values rule (dict format)."""
+        for rule, expected in self.accepted_values.items():
+            if rule == "ends_with":
+                if len(path) >= len(expected) and path[-len(expected):] == expected:
+                    return True
+            elif rule == "starts_with":
+                if len(path) >= len(expected) and path[:len(expected)] == expected:
+                    return True
+            elif rule == "alternating":
+                if all(path[i] == expected[i % len(expected)] for i in range(len(path))):
+                    return True
+            elif rule == "repeat":
+                val, count = expected
+                if path.count(val) >= count:
+                    return True
+            elif rule == "start_from_each":
+                if any(path[:len(pat)] == pat for pat in expected if len(path) >= len(pat)):
+                    return True
+        return False

@@ -380,13 +380,19 @@ class DBProvider:
             self.connection.rollback()
             raise ValueError(f"❌ SQL error in update_user_level: {e}")
         
-    def delete_user_level(self, level_id, user_id):
+    def delete_user_level(self, level_id, user_id, is_admin=False):
         try:
             with self.connection.cursor() as cursor:
-                cursor.execute("""
-                    DELETE FROM data.levels
-                    WHERE id = %s AND owner_id = %s
-                """, (level_id, user_id))
+                if is_admin:
+                    cursor.execute("""
+                        DELETE FROM data.levels
+                        WHERE id = %s
+                    """, (level_id,))
+                else:
+                    cursor.execute("""
+                        DELETE FROM data.levels
+                        WHERE id = %s AND owner_id = %s
+                    """, (level_id, user_id))
             self.connection.commit()
             return cursor.rowcount > 0
         except Exception as e:

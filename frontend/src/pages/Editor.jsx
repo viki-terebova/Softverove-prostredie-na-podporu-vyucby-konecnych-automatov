@@ -247,9 +247,7 @@ const EditorPage = () => {
   }, []);
 
   useEffect(() => {
-    console.log("Level loaded:", level);
     if (level?.category_number === 0 && tutorialSteps[0]?.[level.level_number]) {
-      console.log("Starting tutorial for Level Number:", level.level_number);
       setTutorialVisible(true);
       setTutorialStep(0);
     }

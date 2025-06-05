@@ -18,7 +18,6 @@ const LevelsPage = () => {
 
     const [loading, setLoading] = useState(true);
     const location = useLocation();
-    console.log("Location state:", location.state);
 
     useEffect(() => {
         setLoading(true);

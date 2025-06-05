@@ -205,10 +205,8 @@ export default function LevelEditorPage() {
             fetch(`/api/v1/level?level_id=${levelId}`)
             .then(res => res.json())
             .then(data => {
-                console.log("Fetched level data:", data);
                 setLevelName(data.level_name || "");
                 setTask(data.task || "");
-                console.log("Setup data:", data.setup);
                 const setup = data.setup || {};
                 setTransitionValues(setup.transition_values || []);
                 setAcceptAll(setup.accept_all || false);
@@ -299,9 +297,6 @@ export default function LevelEditorPage() {
                 accept_all_sequences: acceptAllSequences
             }
         };
-        console.log("acceptedValues:", acceptedValues);
-        console.log("newAcceptedValue:", newAcceptedValue);
-        console.log("parsedAcceptedValues:", parsedAcceptedValues);
 
         const url = levelId
             ? `/api/v1/update_level?level_id=${levelId}`

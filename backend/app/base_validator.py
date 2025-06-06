@@ -48,6 +48,14 @@ class BaseValidator:
                         "accepted": False,
                         "reason": f"The person does not have enough money in wallet for sequence: {path}."
                     }
+                
+                if isinstance(self.accepted_values, list):
+                    total = round(sum(path), 2)
+                    required = set(round(v, 2) for v in self.accepted_values)
+                    if total not in required:
+                        return {"accepted": False, "reason": f"Accepted sequence {path} total {total} not in allowed totals {required}."}
+                    else:
+                        matched_values.add(total)
 
                 matched_sequences.append(path)
                 for req in self.required_sequences:
@@ -77,18 +85,6 @@ class BaseValidator:
             if not rule_matched:
                 return {"accepted": False, "reason": "No sequences matched the accepted rule."}
             return {"accepted": True, "valid_paths": rule_matched}
-
-        elif isinstance(self.accepted_values, list):
-            required_totals = {round(sum(p), 2) if isinstance(p, list) else round(p, 2) for p in self.accepted_values}
-            list_matched = []
-            for path in matched_sequences:
-                total = round(sum(path), 2)
-                if total in required_totals:
-                    list_matched.append(path)
-                    matched_values.add(total)
-            if not list_matched:
-                return {"accepted": False, "reason": "No sequences matched the accepted totals."}
-            return {"accepted": True, "valid_paths": list_matched}
 
         if self.accept_all_sequences and len(matched_required) < len(self.required_sequences):
             missing = [s for s in self.required_sequences if tuple(s) not in matched_required]

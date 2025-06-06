@@ -443,7 +443,7 @@ export default function LevelEditorPage() {
 
                 <div className="form-group d-flex align-items-center">
                     <label className="form-label" style={{ minWidth: "240px" }}>
-                        Forbidden Values:
+                        Forbidden coins:
                         <button type="button" className="info-button" onClick={() => showInfo(infoMessages.forbiddenValues)}>ℹ️</button>
                     </label>
                     <div className="d-flex w-100">

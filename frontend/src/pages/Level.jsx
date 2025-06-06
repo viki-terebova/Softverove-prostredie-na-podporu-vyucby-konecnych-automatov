@@ -77,7 +77,7 @@ const LevelPage = () => {
             </div>
 
             <div className="repair-button-area">
-              <Button text="🛠 Repair" onClick={handleEdit} />
+              <Button text="🛠 Create" onClick={handleEdit} />
             </div>
           </>
         )}

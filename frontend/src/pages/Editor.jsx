@@ -278,7 +278,20 @@ const EditorPage = () => {
               const transitionData = data.transitions;
   
               setStates(stateData);
-              setTransitions(transitionData);
+              const groupedTransitions = {};
+              for (const t of transitionData) {
+                const key = `${t.from}->${t.to}`;
+                if (!groupedTransitions[key]) {
+                  groupedTransitions[key] = {
+                    from: t.from,
+                    to: t.to,
+                    values: [t.value]
+                  };
+                } else {
+                  groupedTransitions[key].values.push(t.value);
+                }
+              }
+              setTransitions(Object.values(groupedTransitions));
               console.log("Loaded states:", stateData);
               console.log("Loaded transitions:", transitionData);
   
@@ -381,7 +394,7 @@ const EditorPage = () => {
                   : " -"}
                 <br />
 
-                <strong>🚫 Forbidden values: </strong>
+                <strong>🚫 Forbidden coins: </strong>
                 {level.setup.forbidden_values?.length
                   ? level.setup.forbidden_values.join(", ") + " €"
                   : " -"}
@@ -520,11 +533,25 @@ const EditorPage = () => {
                     .map(([val]) => val);
 
                   if (values.length > 0) {
-                    setTransitions(prev => [...prev, {
-                      from: pendingTransition.from,
-                      to: pendingTransition.to,
-                      values
-                    }]);
+                    setTransitions(prev => {
+                      const updated = [...prev];
+                      const existing = updated.find(
+                        t => t.from === pendingTransition.from && t.to === pendingTransition.to
+                      );
+
+                      if (existing) {
+                        const merged = Array.from(new Set([...existing.values, ...values]));
+                        existing.values = merged;
+                      } else {
+                        updated.push({
+                          from: pendingTransition.from,
+                          to: pendingTransition.to,
+                          values
+                        });
+                      }
+
+                      return updated;
+                    });
                   }
 
                   setSelectedCoins({});
